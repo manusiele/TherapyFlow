@@ -290,8 +290,8 @@ export default function SchedulePage() {
                 <Image 
                   src="/logo/logo-horizontal.png" 
                   alt="TherapyFlow" 
-                  width={350}
-                  height={70}
+                  width={550}
+                  height={700}
                   className="h-[70px] w-auto cursor-pointer hover:opacity-80 transition-opacity"
                   priority
                 />
