@@ -32,14 +32,24 @@ export default function SchedulePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null)
 
-  // Mock data - would come from Redux/Supabase in production
-  const [sessions, setSessions] = useState<Session[]>([
+  // Mock data - Therapist sessions (therapist's schedule)
+  const [therapistSessions, setTherapistSessions] = useState<Session[]>([
     { id: '1', patient: 'John Doe', type: 'Individual Therapy', time: '09:00 AM', duration: '50 min', status: 'confirmed' },
     { id: '2', patient: 'Jane Smith', type: 'Couples Therapy', time: '10:30 AM', duration: '60 min', status: 'confirmed' },
     { id: '3', patient: 'Michael Brown', type: 'Initial Consultation', time: '02:00 PM', duration: '90 min', status: 'pending' },
     { id: '4', patient: 'Emily Davis', type: 'Individual Therapy', time: '03:30 PM', duration: '50 min', status: 'confirmed' },
     { id: '5', patient: 'Robert Wilson', type: 'Group Therapy', time: '05:00 PM', duration: '60 min', status: 'confirmed' },
   ])
+
+  // Mock data - Client sessions (from client's perspective - their own appointments)
+  const [clientSessions, setClientSessions] = useState<Session[]>([
+    { id: 'c1', patient: 'Dr. Sarah Johnson', type: 'Individual Therapy', time: '10:00 AM', duration: '50 min', status: 'confirmed', notes: 'Weekly therapy session' },
+    { id: 'c2', patient: 'Dr. Sarah Johnson', type: 'Follow-up', time: '03:00 PM', duration: '30 min', status: 'pending', notes: 'Check-in session' },
+  ])
+
+  // Get sessions based on view category
+  const sessions = viewCategory === 'therapist' ? therapistSessions : clientSessions
+  const setSessions = viewCategory === 'therapist' ? setTherapistSessions : setClientSessions
 
   // Generate week days starting from selected date
   const getWeekDays = () => {
@@ -289,24 +299,26 @@ export default function SchedulePage() {
             </div>
             <div className="flex items-center space-x-4">
               <ThemeToggle />
-              <button 
-                onClick={() => setIsModalOpen(true)}
-                title="New Session (Ctrl+N)"
-                className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 hover:from-blue-700 hover:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white font-medium px-6 py-2.5 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/30 dark:shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/40 dark:hover:shadow-blue-500/30 hover:scale-105 flex items-center"
-              >
-                <div className="relative z-10 flex items-center">
-                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-2.5 group-hover:bg-white/30 transition-colors">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
+              {viewCategory === 'therapist' && (
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  title="New Session (Ctrl+N)"
+                  className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 hover:from-blue-700 hover:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white font-medium px-6 py-2.5 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/30 dark:shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/40 dark:hover:shadow-blue-500/30 hover:scale-105 flex items-center"
+                >
+                  <div className="relative z-10 flex items-center">
+                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-2.5 group-hover:bg-white/30 transition-colors">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </div>
+                    <span className="text-[15px]">New Session</span>
                   </div>
-                  <span className="text-[15px]">New Session</span>
-                </div>
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                {/* Glow effect */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-blue-400/0 via-blue-300/30 to-blue-400/0 blur-xl"></div>
-              </button>
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-blue-400/0 via-blue-300/30 to-blue-400/0 blur-xl"></div>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -417,7 +429,7 @@ export default function SchedulePage() {
               /* Day View */
               <div className="card">
                 <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6">
-                  Sessions ({sessions.length})
+                  {viewCategory === 'therapist' ? 'Sessions' : 'My Appointments'} ({sessions.length})
                 </h2>
                 
                 {sessions.length === 0 ? (
@@ -425,13 +437,17 @@ export default function SchedulePage() {
                     <svg className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <p className="text-slate-600 dark:text-slate-400">No sessions scheduled for this day</p>
-                    <button 
-                      onClick={() => setIsModalOpen(true)}
-                      className="btn-primary mt-4"
-                    >
-                      Schedule Session
-                    </button>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      {viewCategory === 'therapist' ? 'No sessions scheduled for this day' : 'No appointments scheduled for this day'}
+                    </p>
+                    {viewCategory === 'therapist' && (
+                      <button 
+                        onClick={() => setIsModalOpen(true)}
+                        className="btn-primary mt-4"
+                      >
+                        Schedule Session
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1306,30 +1322,39 @@ export default function SchedulePage() {
                   <span>Join Video Call</span>
                 </button>
 
-                {/* Similarity: Secondary buttons share consistent styling */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Similarity: Secondary buttons share consistent styling - Only show for therapist view */}
+                {viewCategory === 'therapist' ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      onClick={() => selectedSession && handleEditSession(selectedSession)}
+                      className="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-semibold py-3 px-4 rounded-xl transition-all border border-slate-300 dark:border-slate-600 flex items-center justify-center space-x-2"
+                      title="Edit session (Ctrl+E)"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span>Edit</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleDeleteSession(selectedSession)}
+                      className="bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 font-semibold py-3 px-4 rounded-xl transition-all border border-red-200 dark:border-red-800 flex items-center justify-center space-x-2"
+                      title="Cancel session (Delete)"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>Cancel</span>
+                    </button>
+                  </div>
+                ) : (
                   <button 
-                    onClick={() => selectedSession && handleEditSession(selectedSession)}
-                    className="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-semibold py-3 px-4 rounded-xl transition-all border border-slate-300 dark:border-slate-600 flex items-center justify-center space-x-2"
-                    title="Edit session (Ctrl+E)"
+                    onClick={() => setShowSessionDetails(false)}
+                    className="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-semibold py-3 px-4 rounded-xl transition-all border border-slate-300 dark:border-slate-600"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    <span>Edit</span>
+                    Close
                   </button>
-                  
-                  <button 
-                    onClick={() => handleDeleteSession(selectedSession)}
-                    className="bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 font-semibold py-3 px-4 rounded-xl transition-all border border-red-200 dark:border-red-800 flex items-center justify-center space-x-2"
-                    title="Cancel session (Delete)"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    <span>Cancel</span>
-                  </button>
-                </div>
+                )}
               </div>
             </div>
           </div>
