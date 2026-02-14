@@ -287,7 +287,7 @@ export default function SchedulePage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <Link href="/dashboard">
-                <div className="dark:bg-white/10 dark:backdrop-blur-md dark:border dark:border-white/20 dark:rounded-xl dark:px-4 dark:py-2 dark:shadow-lg dark:shadow-blue-500/10 hover:opacity-80 transition-opacity">
+                <div className="dark:bg-white dark:rounded-lg dark:px-3 dark:py-2 dark:shadow-lg hover:opacity-80 transition-opacity">
                   <Image 
                     src="/logo/logo-horizontal.png" 
                     alt="TherapyFlow" 

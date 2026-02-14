@@ -12,7 +12,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-              <div className="dark:bg-white/10 dark:backdrop-blur-md dark:border dark:border-white/20 dark:rounded-xl dark:px-4 dark:py-2 dark:shadow-lg dark:shadow-blue-500/10">
+              <div className="dark:bg-white dark:rounded-lg dark:px-3 dark:py-2 dark:shadow-lg">
                 <Image 
                   src="/logo/logo-horizontal.png" 
                   alt="TherapyFlow" 
@@ -143,7 +143,7 @@ export default function Home() {
       <footer className="bg-slate-900 dark:bg-slate-950 text-white px-6 py-12">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center mb-4">
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-2 shadow-lg shadow-blue-500/10">
+            <div className="bg-white rounded-lg px-3 py-2 shadow-lg">
               <Image 
                 src="/logo/logo-horizontal.png" 
                 alt="TherapyFlow" 
