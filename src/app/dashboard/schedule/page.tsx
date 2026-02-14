@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import AddSessionModal, { SessionFormData } from '@/components/AddSessionModal'
 import ThemeToggle from '@/components/ThemeToggle'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Session {
   id: string
@@ -17,6 +18,7 @@ interface Session {
 }
 
 export default function SchedulePage() {
+  const { theme } = useTheme()
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [view, setView] = useState<'day' | 'week'>('day')
   const [viewCategory, setViewCategory] = useState<'therapist' | 'client'>('therapist')
@@ -287,16 +289,14 @@ export default function SchedulePage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <Link href="/dashboard">
-                <div className="dark:bg-white dark:rounded-lg dark:px-3 dark:py-2 dark:shadow-lg hover:opacity-80 transition-opacity">
-                  <Image 
-                    src="/logo/logo-horizontal.png" 
-                    alt="TherapyFlow" 
-                    width={550}
-                    height={700}
-                    className="h-[70px] w-auto cursor-pointer"
-                    priority
-                  />
-                </div>
+                <Image 
+                  src={theme === 'dark' ? '/logo/logo-horizontal-dark.png' : '/logo/logo-horizontal.png'}
+                  alt="TherapyFlow" 
+                  width={550}
+                  height={700}
+                  className="h-[70px] w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                  priority
+                />
               </Link>
               <div className="border-l border-slate-300 dark:border-slate-600 pl-4">
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Full Schedule</h1>

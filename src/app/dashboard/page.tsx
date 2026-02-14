@@ -6,8 +6,10 @@ import SessionOverview from '@/components/SessionOverview'
 import PatientProgress from '@/components/PatientProgress'
 import AddSessionModal, { SessionFormData } from '@/components/AddSessionModal'
 import ThemeToggle from '@/components/ThemeToggle'
+import { useTheme } from '@/contexts/ThemeContext'
 
 export default function Dashboard() {
+  const { theme } = useTheme()
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const handleAddSession = (sessionData: SessionFormData) => {
@@ -23,16 +25,14 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <div className="dark:bg-white dark:rounded-lg dark:px-3 dark:py-2 dark:shadow-lg">
-                <Image 
-                  src="/logo/logo-horizontal.png" 
-                  alt="TherapyFlow" 
-                  width={350}
-                  height={70}
-                  className="h-[70px] w-auto"
-                  priority
-                />
-              </div>
+              <Image 
+                src={theme === 'dark' ? '/logo/logo-horizontal-dark.png' : '/logo/logo-horizontal.png'}
+                alt="TherapyFlow" 
+                width={350}
+                height={70}
+                className="h-[70px] w-auto"
+                priority
+              />
               <div className="border-l border-slate-300 dark:border-slate-600 pl-4">
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h1>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Welcome back, Dr. Sarah Johnson</p>

@@ -3,8 +3,11 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import ThemeToggle from '@/components/ThemeToggle'
+import { useTheme } from '@/contexts/ThemeContext'
 
 export default function Home() {
+  const { theme } = useTheme()
+  
   return (
     <main className="min-h-screen">
       {/* Navigation */}
@@ -12,16 +15,14 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-              <div className="dark:bg-white dark:rounded-lg dark:px-3 dark:py-2 dark:shadow-lg">
-                <Image 
-                  src="/logo/logo-horizontal.png" 
-                  alt="TherapyFlow" 
-                  width={320}
-                  height={64}
-                  className="h-16 w-auto"
-                  priority
-                />
-              </div>
+              <Image 
+                src={theme === 'dark' ? '/logo/logo-horizontal-dark.png' : '/logo/logo-horizontal.png'}
+                alt="TherapyFlow" 
+                width={320}
+                height={64}
+                className="h-16 w-auto"
+                priority
+              />
             </Link>
             <div className="flex items-center space-x-4">
               <ThemeToggle />
@@ -143,15 +144,13 @@ export default function Home() {
       <footer className="bg-slate-900 dark:bg-slate-950 text-white px-6 py-12">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center mb-4">
-            <div className="bg-white rounded-lg px-3 py-2 shadow-lg">
-              <Image 
-                src="/logo/logo-horizontal.png" 
-                alt="TherapyFlow" 
-                width={320}
-                height={64}
-                className="h-16 w-auto"
-              />
-            </div>
+            <Image 
+              src="/logo/logo-horizontal-dark.png"
+              alt="TherapyFlow" 
+              width={320}
+              height={64}
+              className="h-16 w-auto"
+            />
           </div>
           <p className="text-slate-400 mb-6">
             Empowering mental health professionals with modern technology
