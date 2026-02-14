@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import ThemeToggle from '@/components/ThemeToggle'
 
 export default function Home() {
@@ -10,12 +11,16 @@ export default function Home() {
       <nav className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">TF</span>
-              </div>
-              <span className="text-xl font-semibold text-slate-900 dark:text-slate-100">TherapyFlow</span>
-            </div>
+            <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+              <Image 
+                src="/logo/logo-horizontal.png" 
+                alt="TherapyFlow" 
+                width={180}
+                height={36}
+                className="h-9 w-auto"
+                priority
+              />
+            </Link>
             <div className="flex items-center space-x-4">
               <ThemeToggle />
               <Link href="/dashboard" className="btn-secondary">
@@ -135,11 +140,14 @@ export default function Home() {
       {/* Footer */}
       <footer className="bg-slate-900 dark:bg-slate-950 text-white px-6 py-12">
         <div className="max-w-7xl mx-auto text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">TF</span>
-            </div>
-            <span className="text-xl font-semibold">TherapyFlow</span>
+          <div className="flex items-center justify-center mb-4">
+            <Image 
+              src="/logo/logo-horizontal.png" 
+              alt="TherapyFlow" 
+              width={180}
+              height={36}
+              className="h-9 w-auto brightness-0 invert"
+            />
           </div>
           <p className="text-slate-400 mb-6">
             Empowering mental health professionals with modern technology

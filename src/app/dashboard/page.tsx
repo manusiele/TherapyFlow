@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import SessionOverview from '@/components/SessionOverview'
 import PatientProgress from '@/components/PatientProgress'
 import AddSessionModal, { SessionFormData } from '@/components/AddSessionModal'
@@ -22,7 +23,14 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <img src="/logo/logo-horizontal.png" alt="TherapyFlow" className="h-10 w-auto" />
+              <Image 
+                src="/logo/logo-horizontal.png" 
+                alt="TherapyFlow" 
+                width={200}
+                height={40}
+                className="h-10 w-auto"
+                priority
+              />
               <div className="border-l border-slate-300 dark:border-slate-600 pl-4">
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h1>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Welcome back, Dr. Sarah Johnson</p>

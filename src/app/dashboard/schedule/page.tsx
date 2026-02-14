@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import AddSessionModal, { SessionFormData } from '@/components/AddSessionModal'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -286,7 +287,14 @@ export default function SchedulePage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <Link href="/dashboard">
-                <img src="/logo/logo-horizontal.png" alt="TherapyFlow" className="h-10 w-auto cursor-pointer hover:opacity-80 transition-opacity" />
+                <Image 
+                  src="/logo/logo-horizontal.png" 
+                  alt="TherapyFlow" 
+                  width={200}
+                  height={40}
+                  className="h-10 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                  priority
+                />
               </Link>
               <div className="border-l border-slate-300 dark:border-slate-600 pl-4">
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Full Schedule</h1>
