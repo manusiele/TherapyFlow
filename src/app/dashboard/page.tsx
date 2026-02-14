@@ -26,9 +26,9 @@ export default function Dashboard() {
               <Image 
                 src="/logo/logo-horizontal.png" 
                 alt="TherapyFlow" 
-                width={200}
-                height={40}
-                className="h-10 w-auto"
+                width={350}
+                height={70}
+                className="h-[70px] w-auto"
                 priority
               />
               <div className="border-l border-slate-300 dark:border-slate-600 pl-4">

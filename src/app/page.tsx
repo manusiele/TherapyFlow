@@ -15,9 +15,9 @@ export default function Home() {
               <Image 
                 src="/logo/logo-horizontal.png" 
                 alt="TherapyFlow" 
-                width={180}
-                height={36}
-                className="h-9 w-auto"
+                width={320}
+                height={64}
+                className="h-16 w-auto"
                 priority
               />
             </Link>
@@ -144,9 +144,9 @@ export default function Home() {
             <Image 
               src="/logo/logo-horizontal.png" 
               alt="TherapyFlow" 
-              width={180}
-              height={36}
-              className="h-9 w-auto brightness-0 invert"
+              width={320}
+              height={64}
+              className="h-16 w-auto brightness-0 invert"
             />
           </div>
           <p className="text-slate-400 mb-6">
