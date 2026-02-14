@@ -17,7 +17,7 @@ export default function Home() {
                 alt="TherapyFlow" 
                 width={320}
                 height={64}
-                className="h-16 w-auto"
+                className="h-16 w-auto dark:invert"
                 priority
               />
             </Link>
@@ -146,7 +146,7 @@ export default function Home() {
               alt="TherapyFlow" 
               width={320}
               height={64}
-              className="h-16 w-auto"
+              className="h-16 w-auto invert"
             />
           </div>
           <p className="text-slate-400 mb-6">

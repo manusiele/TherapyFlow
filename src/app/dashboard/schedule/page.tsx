@@ -292,7 +292,7 @@ export default function SchedulePage() {
                   alt="TherapyFlow" 
                   width={550}
                   height={700}
-                  className="h-[70px] w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                  className="h-[70px] w-auto cursor-pointer hover:opacity-80 transition-opacity dark:invert"
                   priority
                 />
               </Link>

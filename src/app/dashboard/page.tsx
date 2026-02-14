@@ -28,7 +28,7 @@ export default function Dashboard() {
                 alt="TherapyFlow" 
                 width={350}
                 height={70}
-                className="h-[70px] w-auto"
+                className="h-[70px] w-auto dark:invert"
                 priority
               />
               <div className="border-l border-slate-300 dark:border-slate-600 pl-4">
