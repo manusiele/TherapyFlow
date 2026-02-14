@@ -1,7 +1,19 @@
+'use client'
+
+import { useState } from 'react'
 import SessionOverview from '@/components/SessionOverview'
 import PatientProgress from '@/components/PatientProgress'
+import AddSessionModal, { SessionFormData } from '@/components/AddSessionModal'
 
 export default function Dashboard() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const handleAddSession = (sessionData: SessionFormData) => {
+    // In production, this would dispatch to Redux and save to Supabase
+    console.log('New session:', sessionData)
+    // Show success notification, refresh data, etc.
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
@@ -13,7 +25,10 @@ export default function Dashboard() {
               <p className="text-slate-600 mt-1">Welcome back, Dr. Sarah Johnson</p>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="btn-secondary">
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="btn-secondary"
+              >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
@@ -85,6 +100,13 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      {/* Add Session Modal */}
+      <AddSessionModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleAddSession}
+      />
     </div>
   )
 }
