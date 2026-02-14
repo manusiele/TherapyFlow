@@ -1104,10 +1104,180 @@ export default function SchedulePage() {
         </div>
       )}
 
-      {/* Session Details Modal */}
+      {/* Session Details Modal - Glassmorphism Design */}
       {showSessionDetails && selectedSession && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl max-w-3xl w-full overflow-hidden">
+        <div className="fixed inset-0 bg-gradient-to-br from-blue-900/40 via-purple-900/40 to-pink-900/40 backdrop-blur-2xl flex items-center justify-center z-50 p-4 animate-fade-in">
+          {/* Floating Background Orbs */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+            <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+          </div>
+
+          <div className="relative bg-white/10 dark:bg-black/20 backdrop-blur-3xl rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden border border-white/20 dark:border-white/10">
+            {/* Glassmorphism Header */}
+            <div className="relative bg-gradient-to-br from-white/20 to-white/5 dark:from-white/10 dark:to-white/5 backdrop-blur-xl px-10 py-8 border-b border-white/20 dark:border-white/10">
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="flex items-center space-x-6">
+                  {/* Glass Avatar */}
+                  <div className="relative group">
+                    <div className="w-24 h-24 bg-white/20 dark:bg-white/10 backdrop-blur-2xl rounded-3xl flex items-center justify-center border-2 border-white/30 dark:border-white/20 shadow-2xl group-hover:scale-105 transition-all duration-300">
+                      <span className="text-white font-bold text-3xl drop-shadow-lg">
+                        {selectedSession.patient.split(' ').map(n => n[0]).join('')}
+                      </span>
+                    </div>
+                    {/* Glass Status Indicator */}
+                    <div className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-full border-4 border-white/50 backdrop-blur-xl shadow-xl ${
+                      selectedSession.status === 'confirmed' ? 'bg-emerald-400/90' :
+                      selectedSession.status === 'pending' ? 'bg-amber-400/90' :
+                      selectedSession.status === 'completed' ? 'bg-sky-400/90' :
+                      'bg-rose-400/90'
+                    }`}></div>
+                  </div>
+                  
+                  <div>
+                    <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">
+                      {selectedSession.patient}
+                    </h2>
+                    <div className="flex items-center space-x-3">
+                      <span className="px-4 py-1.5 bg-white/20 backdrop-blur-xl rounded-full text-white text-sm font-medium border border-white/30 shadow-lg">
+                        {selectedSession.type}
+                      </span>
+                      <span className={`px-4 py-1.5 backdrop-blur-xl rounded-full text-xs font-bold uppercase tracking-wider border-2 shadow-lg ${
+                        selectedSession.status === 'confirmed' ? 'bg-emerald-500/80 text-white border-emerald-300/50' :
+                        selectedSession.status === 'pending' ? 'bg-amber-500/80 text-white border-amber-300/50' :
+                        selectedSession.status === 'completed' ? 'bg-sky-500/80 text-white border-sky-300/50' :
+                        'bg-rose-500/80 text-white border-rose-300/50'
+                      }`}>
+                        {selectedSession.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => setShowSessionDetails(false)}
+                  className="p-3 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-2xl transition-all hover:rotate-90 duration-300 border border-white/20 group"
+                  aria-label="Close modal"
+                >
+                  <svg className="w-6 h-6 text-white group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Glassmorphism Content */}
+            <div className="p-10 space-y-6">
+              {/* Session Info Grid - Glass Cards */}
+              <div className="grid grid-cols-3 gap-5">
+                {/* Time Glass Card */}
+                <div className="group relative bg-white/10 dark:bg-white/5 backdrop-blur-2xl rounded-2xl p-6 border border-white/20 dark:border-white/10 hover:bg-white/15 dark:hover:bg-white/10 transition-all hover:scale-105 hover:shadow-2xl cursor-pointer">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs font-bold text-white/70 uppercase tracking-wider mb-2">Time</div>
+                      <div className="text-2xl font-bold text-white drop-shadow-lg">{selectedSession.time}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Duration Glass Card */}
+                <div className="group relative bg-white/10 dark:bg-white/5 backdrop-blur-2xl rounded-2xl p-6 border border-white/20 dark:border-white/10 hover:bg-white/15 dark:hover:bg-white/10 transition-all hover:scale-105 hover:shadow-2xl cursor-pointer">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs font-bold text-white/70 uppercase tracking-wider mb-2">Duration</div>
+                      <div className="text-2xl font-bold text-white drop-shadow-lg">{selectedSession.duration}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Type Glass Card */}
+                <div className="group relative bg-white/10 dark:bg-white/5 backdrop-blur-2xl rounded-2xl p-6 border border-white/20 dark:border-white/10 hover:bg-white/15 dark:hover:bg-white/10 transition-all hover:scale-105 hover:shadow-2xl cursor-pointer">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs font-bold text-white/70 uppercase tracking-wider mb-2">Type</div>
+                      <div className="text-base font-bold text-white drop-shadow-lg leading-tight">{selectedSession.type}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes Glass Section */}
+              {selectedSession.notes && (
+                <div className="relative bg-white/10 dark:bg-white/5 backdrop-blur-2xl rounded-2xl p-6 border border-white/20 dark:border-white/10">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs font-bold text-white/70 uppercase tracking-wider mb-2">Session Notes</div>
+                      <p className="text-white/90 text-sm leading-relaxed drop-shadow">{selectedSession.notes}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Glass Action Buttons */}
+              <div className="space-y-4 pt-4">
+                {/* Primary Glass Button */}
+                <button 
+                  onClick={() => showToastMessage('Video call feature coming soon!')}
+                  className="group relative w-full bg-white/20 hover:bg-white/30 backdrop-blur-2xl text-white font-bold py-5 px-6 rounded-2xl transition-all hover:scale-[1.02] shadow-2xl border border-white/30 flex items-center justify-center space-x-3 overflow-hidden"
+                  title="Join video call (Ctrl+V)"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                  <svg className="w-6 h-6 relative z-10 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span className="relative z-10 drop-shadow-lg">Join Video Call</span>
+                </button>
+
+                {/* Secondary Glass Buttons */}
+                <div className="grid grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => showToastMessage('Edit feature coming soon!')}
+                    className="bg-white/10 hover:bg-white/20 backdrop-blur-2xl text-white font-semibold py-4 px-6 rounded-2xl transition-all hover:scale-105 border border-white/20 flex items-center justify-center space-x-2 shadow-xl"
+                    title="Edit session (Ctrl+E)"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span>Edit</span>
+                  </button>
+                  
+                  <button 
+                    onClick={() => handleDeleteSession(selectedSession)}
+                    className="bg-rose-500/20 hover:bg-rose-500/30 backdrop-blur-2xl text-white font-semibold py-4 px-6 rounded-2xl transition-all hover:scale-105 border border-rose-400/30 hover:border-rose-400/50 flex items-center justify-center space-x-2 shadow-xl"
+                    title="Cancel session (Delete)"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Cancel</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
             {/* Enhanced Header with Gradient and Pattern */}
             <div className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 dark:from-blue-500 dark:via-blue-600 dark:to-purple-600 p-8 overflow-hidden">
               {/* Decorative Background Pattern */}
