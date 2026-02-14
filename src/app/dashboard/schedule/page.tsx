@@ -285,14 +285,12 @@ export default function SchedulePage() {
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+              <Link href="/dashboard">
+                <img src="/logo/logo-horizontal.png" alt="TherapyFlow" className="h-10 w-auto cursor-pointer hover:opacity-80 transition-opacity" />
               </Link>
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Full Schedule</h1>
-                <p className="text-slate-600 dark:text-slate-400 mt-1">
+              <div className="border-l border-slate-300 dark:border-slate-600 pl-4">
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Full Schedule</h1>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
                   {formatDate(selectedDate)} • {viewCategory === 'therapist' ? 'Therapist View' : 'Client View'}
                 </p>
               </div>

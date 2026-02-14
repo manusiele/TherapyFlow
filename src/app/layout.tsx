@@ -8,6 +8,10 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'TherapyFlow - Mental Health Management',
   description: 'Comprehensive therapy management platform for mental health professionals',
+  icons: {
+    icon: '/logo/logo-icon.png',
+    apple: '/logo/logo-icon.png',
+  },
 }
 
 export default function RootLayout({

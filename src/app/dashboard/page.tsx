@@ -21,9 +21,12 @@ export default function Dashboard() {
       <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Therapist Dashboard</h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-1">Welcome back, Dr. Sarah Johnson</p>
+            <div className="flex items-center space-x-4">
+              <img src="/logo/logo-horizontal.png" alt="TherapyFlow" className="h-10 w-auto" />
+              <div className="border-l border-slate-300 dark:border-slate-600 pl-4">
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h1>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Welcome back, Dr. Sarah Johnson</p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <ThemeToggle />
