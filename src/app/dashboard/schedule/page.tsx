@@ -240,7 +240,6 @@ export default function SchedulePage() {
     showToastMessage('Profile updated successfully!')
     // In production, save to Supabase
   }
-  }
 
   const showToastMessage = (message: string) => {
     setToastMessage(message)
