@@ -17,7 +17,7 @@ export default function Dashboard() {
     name: 'Dr. Sarah Johnson',
     email: 'sarah.johnson@therapyflow.com',
     phone: '+1 (555) 123-4567',
-    specialty: 'Clinical Psychology, Cognitive Behavioral Therapy',
+    specialization: 'Clinical Psychology, Cognitive Behavioral Therapy',
     licenseNumber: 'PSY-12345-CA',
     bio: 'Experienced clinical psychologist specializing in CBT and trauma-informed care. Over 10 years of experience helping clients overcome anxiety, depression, and PTSD.',
     role: 'therapist' as const

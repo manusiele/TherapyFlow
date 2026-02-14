@@ -14,7 +14,7 @@ interface Session {
   type: string
   time: string
   duration: string
-  status: 'confirmed' | 'pending' | 'completed' | 'cancelled'
+  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled'  // Aligned with SQL schema
   notes?: string
 }
 
@@ -28,7 +28,7 @@ export default function SchedulePage() {
   const [isBlockTimeModalOpen, setIsBlockTimeModalOpen] = useState(false)
   const [showSettingsPanel, setShowSettingsPanel] = useState(false)
   const [showAllAppointments, setShowAllAppointments] = useState(false)
-  const [appointmentFilter, setAppointmentFilter] = useState<'all' | 'confirmed' | 'pending' | 'completed' | 'cancelled'>('all')
+  const [appointmentFilter, setAppointmentFilter] = useState<'all' | 'scheduled' | 'confirmed' | 'completed' | 'cancelled'>('all')
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
@@ -42,7 +42,7 @@ export default function SchedulePage() {
     name: 'Dr. Sarah Johnson',
     email: 'sarah.johnson@therapyflow.com',
     phone: '+1 (555) 123-4567',
-    specialty: 'Clinical Psychology, Cognitive Behavioral Therapy',
+    specialization: 'Clinical Psychology, Cognitive Behavioral Therapy',
     licenseNumber: 'PSY-12345-CA',
     bio: 'Experienced clinical psychologist specializing in CBT and trauma-informed care. Over 10 years of experience helping clients overcome anxiety, depression, and PTSD.',
     role: 'therapist' as const
@@ -61,7 +61,7 @@ export default function SchedulePage() {
   const [therapistSessions, setTherapistSessions] = useState<Session[]>([
     { id: '1', patient: 'John Doe', type: 'Individual Therapy', time: '09:00 AM', duration: '50 min', status: 'confirmed' },
     { id: '2', patient: 'Jane Smith', type: 'Couples Therapy', time: '10:30 AM', duration: '60 min', status: 'confirmed' },
-    { id: '3', patient: 'Michael Brown', type: 'Initial Consultation', time: '02:00 PM', duration: '90 min', status: 'pending' },
+    { id: '3', patient: 'Michael Brown', type: 'Initial Consultation', time: '02:00 PM', duration: '90 min', status: 'scheduled' },
     { id: '4', patient: 'Emily Davis', type: 'Individual Therapy', time: '03:30 PM', duration: '50 min', status: 'confirmed' },
     { id: '5', patient: 'Robert Wilson', type: 'Group Therapy', time: '05:00 PM', duration: '60 min', status: 'confirmed' },
   ])
@@ -69,7 +69,7 @@ export default function SchedulePage() {
   // Mock data - Client sessions (from client's perspective - their own appointments)
   const [clientSessions, setClientSessions] = useState<Session[]>([
     { id: 'c1', patient: 'Dr. Sarah Johnson', type: 'Individual Therapy', time: '10:00 AM', duration: '50 min', status: 'confirmed', notes: 'Weekly therapy session' },
-    { id: 'c2', patient: 'Dr. Sarah Johnson', type: 'Follow-up', time: '03:00 PM', duration: '30 min', status: 'pending', notes: 'Check-in session' },
+    { id: 'c2', patient: 'Dr. Sarah Johnson', type: 'Follow-up', time: '03:00 PM', duration: '30 min', status: 'scheduled', notes: 'Check-in session' },
   ])
 
   // Get sessions based on view category
@@ -105,7 +105,7 @@ export default function SchedulePage() {
       ]
     } else if (dayOfWeek === 3) { // Wednesday
       return [
-        { id: 'w3', patient: 'Carol White', type: 'Couples Therapy', time: '11:00 AM', duration: '60 min', status: 'pending' as const },
+        { id: 'w3', patient: 'Carol White', type: 'Couples Therapy', time: '11:00 AM', duration: '60 min', status: 'scheduled' as const },
       ]
     }
     return []
@@ -127,9 +127,9 @@ export default function SchedulePage() {
     const mockAppointments = [
       { id: 'a1', patient: 'Alice Cooper', type: 'Individual Therapy', time: '10:00 AM', duration: '50 min', status: 'confirmed' as const, date: 'Feb 10, 2026' },
       { id: 'a2', patient: 'Bob Martin', type: 'Group Therapy', time: '03:00 PM', duration: '60 min', status: 'confirmed' as const, date: 'Feb 10, 2026' },
-      { id: 'a3', patient: 'Carol White', type: 'Couples Therapy', time: '11:00 AM', duration: '60 min', status: 'pending' as const, date: 'Feb 12, 2026' },
+      { id: 'a3', patient: 'Carol White', type: 'Couples Therapy', time: '11:00 AM', duration: '60 min', status: 'scheduled' as const, date: 'Feb 12, 2026' },
       { id: 'a4', patient: 'David Lee', type: 'Individual Therapy', time: '02:00 PM', duration: '50 min', status: 'confirmed' as const, date: 'Feb 13, 2026' },
-      { id: 'a5', patient: 'Emma Stone', type: 'Family Therapy', time: '04:00 PM', duration: '90 min', status: 'pending' as const, date: 'Feb 15, 2026' },
+      { id: 'a5', patient: 'Emma Stone', type: 'Family Therapy', time: '04:00 PM', duration: '90 min', status: 'scheduled' as const, date: 'Feb 15, 2026' },
       { id: 'a6', patient: 'Frank Miller', type: 'Individual Therapy', time: '09:30 AM', duration: '50 min', status: 'confirmed' as const, date: 'Feb 17, 2026' },
       { id: 'a7', patient: 'Grace Park', type: 'Group Therapy', time: '01:00 PM', duration: '60 min', status: 'completed' as const, date: 'Feb 8, 2026' },
       { id: 'a8', patient: 'Henry Ford', type: 'Individual Therapy', time: '11:00 AM', duration: '50 min', status: 'cancelled' as const, date: 'Feb 9, 2026' },
@@ -152,7 +152,7 @@ export default function SchedulePage() {
   }
 
   // Get count for each status
-  const getStatusCount = (status: 'all' | 'confirmed' | 'pending' | 'completed' | 'cancelled') => {
+  const getStatusCount = (status: 'all' | 'scheduled' | 'confirmed' | 'completed' | 'cancelled') => {
     if (status === 'all') {
       return getAllAppointments().length
     }
@@ -195,7 +195,7 @@ export default function SchedulePage() {
           hour12: true 
         }),
         duration: `${sessionData.duration_minutes} min`,
-        status: 'pending',
+        status: 'scheduled',
         notes: sessionData.notes
       }
       
@@ -298,7 +298,7 @@ export default function SchedulePage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed': return 'bg-green-100 text-green-700 border-green-200'
-      case 'pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200'
+      case 'scheduled': return 'bg-yellow-100 text-yellow-700 border-yellow-200'
       case 'completed': return 'bg-blue-100 text-blue-700 border-blue-200'
       case 'cancelled': return 'bg-red-100 text-red-700 border-red-200'
       default: return 'bg-slate-100 text-slate-700 border-slate-200'
@@ -657,10 +657,10 @@ export default function SchedulePage() {
                     <div>
                       <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                         {weekDays.reduce((acc, day) => 
-                          acc + getSessionsForDay(day).filter(s => s.status === 'pending').length, 0
+                          acc + getSessionsForDay(day).filter(s => s.status === 'scheduled').length, 0
                         )}
                       </div>
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Pending</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400">Scheduled</div>
                     </div>
                   </div>
                 </div>
@@ -710,9 +710,9 @@ export default function SchedulePage() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-400">Pending</span>
+                  <span className="text-slate-600 dark:text-slate-400">Scheduled</span>
                   <span className="font-semibold text-yellow-600 dark:text-yellow-400">
-                    {sessions.filter(s => s.status === 'pending').length}
+                    {sessions.filter(s => s.status === 'scheduled').length}
                   </span>
                 </div>
                 <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700">
@@ -1110,14 +1110,14 @@ export default function SchedulePage() {
                   Confirmed ({getStatusCount('confirmed')})
                 </button>
                 <button 
-                  onClick={() => setAppointmentFilter('pending')}
+                  onClick={() => setAppointmentFilter('scheduled')}
                   className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
-                    appointmentFilter === 'pending'
+                    appointmentFilter === 'scheduled'
                       ? 'bg-yellow-600 text-white shadow-lg'
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                   }`}
                 >
-                  Pending ({getStatusCount('pending')})
+                  Scheduled ({getStatusCount('scheduled')})
                 </button>
                 <button 
                   onClick={() => setAppointmentFilter('completed')}
@@ -1260,7 +1260,7 @@ export default function SchedulePage() {
                     {/* Closure: Status indicator completes the avatar */}
                     <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white ${
                       selectedSession.status === 'confirmed' ? 'bg-green-500' :
-                      selectedSession.status === 'pending' ? 'bg-yellow-500' :
+                      selectedSession.status === 'scheduled' ? 'bg-yellow-500' :
                       selectedSession.status === 'completed' ? 'bg-blue-500' :
                       'bg-red-500'
                     }`}></div>
@@ -1277,7 +1277,7 @@ export default function SchedulePage() {
                       </span>
                       <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
                         selectedSession.status === 'confirmed' ? 'bg-green-500/90 text-white' :
-                        selectedSession.status === 'pending' ? 'bg-yellow-500/90 text-white' :
+                        selectedSession.status === 'scheduled' ? 'bg-yellow-500/90 text-white' :
                         selectedSession.status === 'completed' ? 'bg-blue-500/90 text-white' :
                         'bg-red-500/90 text-white'
                       }`}>
