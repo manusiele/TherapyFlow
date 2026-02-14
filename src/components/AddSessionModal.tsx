@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import LoadingSpinner from './LoadingSpinner'
+import { useState, useEffect } from 'react'
 
 interface AddSessionModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (sessionData: SessionFormData) => void
+  editSession?: Session | null
 }
 
 export interface SessionFormData {
@@ -17,7 +17,17 @@ export interface SessionFormData {
   notes: string
 }
 
-export default function AddSessionModal({ isOpen, onClose, onSubmit }: AddSessionModalProps) {
+interface Session {
+  id: string
+  patient: string
+  type: string
+  time: string
+  duration: string
+  status: 'confirmed' | 'pending' | 'completed' | 'cancelled'
+  notes?: string
+}
+
+export default function AddSessionModal({ isOpen, onClose, onSubmit, editSession }: AddSessionModalProps) {
   const [formData, setFormData] = useState<SessionFormData>({
     patient_id: '',
     session_type: 'individual',
@@ -26,7 +36,6 @@ export default function AddSessionModal({ isOpen, onClose, onSubmit }: AddSessio
     notes: ''
   })
   const [errors, setErrors] = useState<Partial<Record<keyof SessionFormData, string>>>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
 
   // Mock patient data - would come from Redux/Supabase
@@ -49,6 +58,47 @@ export default function AddSessionModal({ isOpen, onClose, onSubmit }: AddSessio
 
   const durations = [30, 45, 50, 60, 90, 120]
 
+  // Populate form when editing
+  useEffect(() => {
+    if (editSession) {
+      // Find patient ID by name
+      const patient = patients.find(p => p.name === editSession.patient)
+      
+      // Convert time to datetime-local format
+      const today = new Date().toISOString().split('T')[0]
+      const timeStr = editSession.time
+      const [time, period] = timeStr.split(' ')
+      let [hours, minutes] = time.split(':').map(Number)
+      
+      if (period === 'PM' && hours !== 12) hours += 12
+      if (period === 'AM' && hours === 12) hours = 0
+      
+      const scheduled_at = `${today}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+      
+      // Convert duration to minutes
+      const duration_minutes = parseInt(editSession.duration)
+      
+      setFormData({
+        patient_id: patient?.id || '1',
+        session_type: editSession.type.toLowerCase().replace(/ /g, '_'),
+        scheduled_at,
+        duration_minutes,
+        notes: editSession.notes || ''
+      })
+    } else {
+      // Reset form for new session
+      setFormData({
+        patient_id: '',
+        session_type: 'individual',
+        scheduled_at: '',
+        duration_minutes: 50,
+        notes: ''
+      })
+    }
+    setErrors({})
+    setIsDirty(false)
+  }, [editSession, isOpen])
+
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof SessionFormData, string>> = {}
     
@@ -58,7 +108,8 @@ export default function AddSessionModal({ isOpen, onClose, onSubmit }: AddSessio
     
     if (!formData.scheduled_at) {
       newErrors.scheduled_at = 'Please select a date and time'
-    } else {
+    } else if (!editSession) {
+      // Only validate future dates for new sessions
       const selectedDate = new Date(formData.scheduled_at)
       const now = new Date()
       if (selectedDate < now) {
@@ -77,13 +128,7 @@ export default function AddSessionModal({ isOpen, onClose, onSubmit }: AddSessio
       return
     }
     
-    setIsSubmitting(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
     onSubmit(formData)
-    setIsSubmitting(false)
     setIsDirty(false)
     
     // Reset form
@@ -139,8 +184,12 @@ export default function AddSessionModal({ isOpen, onClose, onSubmit }: AddSessio
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Schedule New Session</h2>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Add a new therapy session to your calendar</p>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                {editSession ? 'Edit Session' : 'Schedule New Session'}
+              </h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                {editSession ? 'Update session details' : 'Add a new therapy session to your calendar'}
+              </p>
             </div>
             <button
               onClick={handleClose}
@@ -223,7 +272,7 @@ export default function AddSessionModal({ isOpen, onClose, onSubmit }: AddSessio
                     value={formData.scheduled_at}
                     onChange={handleChange}
                     required
-                    min={new Date().toISOString().slice(0, 16)}
+                    min={editSession ? undefined : new Date().toISOString().slice(0, 16)}
                     className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                       errors.scheduled_at 
                         ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20' 
@@ -285,7 +334,7 @@ export default function AddSessionModal({ isOpen, onClose, onSubmit }: AddSessio
             <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="px-5 py-2.5 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg font-medium transition-colors"
               >
                 Cancel
@@ -297,7 +346,7 @@ export default function AddSessionModal({ isOpen, onClose, onSubmit }: AddSessio
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Schedule Session
+                {editSession ? 'Update Session' : 'Schedule Session'}
               </button>
             </div>
           </form>

@@ -19,6 +19,7 @@ export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [view, setView] = useState<'day' | 'week'>('day')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingSession, setEditingSession] = useState<Session | null>(null)
   const [isBlockTimeModalOpen, setIsBlockTimeModalOpen] = useState(false)
   const [showSettingsPanel, setShowSettingsPanel] = useState(false)
   const [showAllAppointments, setShowAllAppointments] = useState(false)
@@ -123,23 +124,54 @@ export default function SchedulePage() {
   }
 
   const handleAddSession = (sessionData: SessionFormData) => {
-    // In production, this would dispatch to Redux and save to Supabase
-    const newSession: Session = {
-      id: String(sessions.length + 1),
-      patient: 'New Patient', // Would lookup from patient_id
-      type: sessionData.session_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      time: new Date(sessionData.scheduled_at).toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: true 
-      }),
-      duration: `${sessionData.duration_minutes} min`,
-      status: 'pending',
-      notes: sessionData.notes
+    if (editingSession) {
+      // Update existing session
+      const updatedSessions = sessions.map(session => {
+        if (session.id === editingSession.id) {
+          return {
+            ...session,
+            patient: editingSession.patient, // Keep same patient for now
+            type: sessionData.session_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            time: new Date(sessionData.scheduled_at).toLocaleTimeString('en-US', { 
+              hour: 'numeric', 
+              minute: '2-digit',
+              hour12: true 
+            }),
+            duration: `${sessionData.duration_minutes} min`,
+            notes: sessionData.notes
+          }
+        }
+        return session
+      })
+      
+      setSessions(updatedSessions)
+      showToastMessage('Session updated successfully!')
+      setEditingSession(null)
+    } else {
+      // Add new session
+      const newSession: Session = {
+        id: String(sessions.length + 1),
+        patient: 'New Patient', // Would lookup from patient_id
+        type: sessionData.session_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        time: new Date(sessionData.scheduled_at).toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: true 
+        }),
+        duration: `${sessionData.duration_minutes} min`,
+        status: 'pending',
+        notes: sessionData.notes
+      }
+      
+      setSessions([...sessions, newSession])
+      showToastMessage('Session added successfully!')
     }
-    
-    setSessions([...sessions, newSession])
-    showToastMessage('Session added successfully!')
+  }
+
+  const handleEditSession = (session: Session) => {
+    setEditingSession(session)
+    setIsModalOpen(true)
+    setShowSessionDetails(false)
   }
 
   const handleBlockTime = () => {
@@ -711,8 +743,12 @@ export default function SchedulePage() {
       {/* Add Session Modal */}
       <AddSessionModal 
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false)
+          setEditingSession(null)
+        }}
         onSubmit={handleAddSession}
+        editSession={editingSession}
       />
 
       {/* Block Time Modal */}
@@ -1237,7 +1273,7 @@ export default function SchedulePage() {
                 {/* Similarity: Secondary buttons share consistent styling */}
                 <div className="grid grid-cols-2 gap-3">
                   <button 
-                    onClick={() => showToastMessage('Edit feature coming soon!')}
+                    onClick={() => selectedSession && handleEditSession(selectedSession)}
                     className="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-semibold py-3 px-4 rounded-xl transition-all border border-slate-300 dark:border-slate-600 flex items-center justify-center space-x-2"
                     title="Edit session (Ctrl+E)"
                   >
