@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 export default function SessionOverview() {
   const sessions = [
     { id: 1, patient: "John Doe", type: "Individual Therapy", time: "2:00 PM", duration: "50 min", status: "confirmed" },
@@ -45,9 +47,9 @@ export default function SessionOverview() {
       </div>
       
       <div className="mt-6 pt-4 border-t border-slate-200">
-        <button className="w-full btn-secondary text-center">
+        <Link href="/dashboard/schedule" className="w-full btn-secondary text-center block">
           View Full Schedule
-        </button>
+        </Link>
       </div>
     </div>
   )
