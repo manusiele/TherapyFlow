@@ -50,10 +50,10 @@ export default function PatientPortal() {
           return
         }
 
-        if (data) {
+        if (data && data.name) {
           setProfileData({
-            name: data.name || 'Patient',
-            email: data.email || user.email,
+            name: data.name,
+            email: data.email,
             phone: data.phone || '',
             dateOfBirth: data.date_of_birth || '',
             emergencyContact: data.emergency_contact || '',
@@ -76,7 +76,7 @@ export default function PatientPortal() {
     try {
       const { data: patientData } = await patients.getByEmail(user.email)
       
-      if (patientData) {
+      if (patientData && patientData.id) {
         await patients.update(patientData.id, {
           name: data.name,
           phone: data.phone,

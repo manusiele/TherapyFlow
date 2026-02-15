@@ -45,10 +45,10 @@ export default function Dashboard() {
           return
         }
 
-        if (data) {
+        if (data && data.name) {
           setProfileData({
-            name: data.name || 'Therapist',
-            email: data.email || user.email,
+            name: data.name,
+            email: data.email,
             phone: data.phone || '',
             specialization: data.specialization || '',
             licenseNumber: data.license_number || '',
@@ -78,7 +78,7 @@ export default function Dashboard() {
     try {
       const { data: therapistData } = await therapists.getByEmail(user.email)
       
-      if (therapistData) {
+      if (therapistData && therapistData.id) {
         await therapists.update(therapistData.id, {
           name: data.name,
           phone: data.phone,
