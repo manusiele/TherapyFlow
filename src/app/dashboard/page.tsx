@@ -9,6 +9,7 @@ import ProfileModal from '@/components/ProfileModal'
 import PatientManagementModal from '@/components/PatientManagementModal'
 import CalendarIntegrationModal from '@/components/CalendarIntegrationModal'
 import MessagesModal from '@/components/MessagesModal'
+import ReportsAnalyticsModal from '@/components/ReportsAnalyticsModal'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -22,6 +23,7 @@ export default function Dashboard() {
   const [isPatientManagementOpen, setIsPatientManagementOpen] = useState(false)
   const [isCalendarIntegrationOpen, setIsCalendarIntegrationOpen] = useState(false)
   const [isMessagesModalOpen, setIsMessagesModalOpen] = useState(false)
+  const [isReportsModalOpen, setIsReportsModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [profileData, setProfileData] = useState({
     name: 'Therapist',
@@ -194,7 +196,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <button
             onClick={() => setIsPatientManagementOpen(true)}
             className="card hover:shadow-lg transition-all group text-left"
@@ -225,6 +227,23 @@ export default function Dashboard() {
               <div>
                 <h3 className="font-semibold text-slate-900 dark:text-slate-100">Calendar Integration</h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400">Sync with Google, Outlook, Apple</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setIsReportsModalOpen(true)}
+            className="card hover:shadow-lg transition-all group text-left"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-800/50 transition-colors">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100">Reports & Analytics</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">View insights and export data</p>
               </div>
             </div>
           </button>
@@ -298,6 +317,13 @@ export default function Dashboard() {
       <MessagesModal
         isOpen={isMessagesModalOpen}
         onClose={() => setIsMessagesModalOpen(false)}
+        userRole="therapist"
+      />
+
+      {/* Reports & Analytics Modal */}
+      <ReportsAnalyticsModal
+        isOpen={isReportsModalOpen}
+        onClose={() => setIsReportsModalOpen(false)}
         userRole="therapist"
       />
     </div>
