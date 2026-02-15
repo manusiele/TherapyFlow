@@ -6,14 +6,23 @@ import Link from 'next/link'
 import ThemeToggle from '@/components/ThemeToggle'
 import ProfileModal, { ProfileData } from '@/components/ProfileModal'
 import BookSessionModal, { BookingData } from '@/components/BookSessionModal'
+import AssessmentModal, { AssessmentData } from '@/components/AssessmentModal'
+import MoodTracker from '@/components/MoodTracker'
+import ResourcesPanel from '@/components/ResourcesPanel'
 import { useTheme } from '@/contexts/ThemeContext'
 
 export default function PatientPortal() {
   const { theme } = useTheme()
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
+  const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState(false)
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [assessmentHistory, setAssessmentHistory] = useState<Array<{
+    date: string
+    assessmentType: string
+    score: number
+  }>>([])
   const [profileData, setProfileData] = useState({
     name: 'John Doe',
     email: 'john.doe@email.com',
@@ -43,6 +52,19 @@ export default function PatientPortal() {
     showToastMessage('Booking request sent! You will receive a confirmation soon.')
     // In production, save to Supabase
     console.log('Booking request:', data)
+  }
+
+  const handleTakeAssessment = (data: AssessmentData) => {
+    const newAssessment = {
+      date: new Date().toISOString(),
+      assessmentType: data.assessmentType,
+      score: data.score
+    }
+    setAssessmentHistory(prev => [newAssessment, ...prev])
+    setIsAssessmentModalOpen(false)
+    showToastMessage(`${data.assessmentType} assessment completed! Score: ${data.score}`)
+    // In production, save to Supabase
+    console.log('Assessment completed:', data)
   }
 
   const showToastMessage = (message: string) => {
@@ -125,7 +147,10 @@ export default function PatientPortal() {
             </div>
           </button>
 
-          <button className="card text-left hover:scale-105 transition-transform">
+          <button 
+            onClick={() => setIsAssessmentModalOpen(true)}
+            className="card text-left hover:scale-105 transition-transform"
+          >
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/50 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,91 +214,10 @@ export default function PatientPortal() {
           </div>
 
           {/* Mood Tracker */}
-          <div className="card">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6">Mood Tracker</h2>
-            <div className="space-y-6">
-              <div>
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-slate-700 dark:text-slate-300">How are you feeling today?</span>
-                  <span className="text-sm text-slate-500 dark:text-slate-500">Rate 1-5</span>
-                </div>
-                <div className="flex space-x-2">
-                  {[1,2,3,4,5].map((i) => (
-                    <button 
-                      key={i} 
-                      className={`w-10 h-10 rounded-full border-2 transition-all ${
-                        i === 4 
-                          ? 'bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500 text-white' 
-                          : 'border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      {i}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
-                <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-3">This Week's Progress</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600 dark:text-slate-400">Average Mood</span>
-                    <span className="font-medium text-blue-600 dark:text-blue-400">3.8/5</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600 dark:text-slate-400">Improvement</span>
-                    <span className="font-medium text-green-600 dark:text-green-400">+12%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <MoodTracker assessmentHistory={assessmentHistory} />
 
           {/* Resources */}
-          <div className="card">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6">Resources</h2>
-            <div className="space-y-3">
-              <button className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors border border-slate-200 dark:border-slate-700">
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl">📚</span>
-                  <div>
-                    <p className="font-medium text-slate-900 dark:text-slate-100">Coping Strategies</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Techniques for managing stress</p>
-                  </div>
-                </div>
-              </button>
-              
-              <button className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors border border-slate-200 dark:border-slate-700">
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl">🧘</span>
-                  <div>
-                    <p className="font-medium text-slate-900 dark:text-slate-100">Mindfulness Exercises</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Guided meditation and breathing</p>
-                  </div>
-                </div>
-              </button>
-              
-              <button className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors border border-slate-200 dark:border-slate-700">
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl">📝</span>
-                  <div>
-                    <p className="font-medium text-slate-900 dark:text-slate-100">Journal Prompts</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Daily reflection questions</p>
-                  </div>
-                </div>
-              </button>
-              
-              <button className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors border border-slate-200 dark:border-slate-700">
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl">📞</span>
-                  <div>
-                    <p className="font-medium text-slate-900 dark:text-slate-100">Crisis Support</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">24/7 emergency contacts</p>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
+          <ResourcesPanel />
         </div>
       </main>
 
@@ -302,6 +246,13 @@ export default function PatientPortal() {
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
         onSubmit={handleBookSession}
+      />
+
+      {/* Assessment Modal */}
+      <AssessmentModal
+        isOpen={isAssessmentModalOpen}
+        onClose={() => setIsAssessmentModalOpen(false)}
+        onSubmit={handleTakeAssessment}
       />
     </div>
   )
