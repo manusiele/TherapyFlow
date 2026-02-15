@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-interface ProfileData {
+export interface ProfileData {
   name: string
   email: string
   phone: string

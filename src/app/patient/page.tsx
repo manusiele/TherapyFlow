@@ -4,12 +4,16 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import ThemeToggle from '@/components/ThemeToggle'
-import ProfileModal from '@/components/ProfileModal'
+import ProfileModal, { ProfileData } from '@/components/ProfileModal'
+import BookSessionModal, { BookingData } from '@/components/BookSessionModal'
 import { useTheme } from '@/contexts/ThemeContext'
 
 export default function PatientPortal() {
   const { theme } = useTheme()
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
   const [profileData, setProfileData] = useState({
     name: 'John Doe',
     email: 'john.doe@email.com',
@@ -19,11 +23,32 @@ export default function PatientPortal() {
     role: 'client' as const
   })
 
-  const handleSaveProfile = (data: typeof profileData) => {
-    setProfileData(data)
+  const handleSaveProfile = (data: ProfileData) => {
+    setProfileData({
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      dateOfBirth: data.dateOfBirth || '',
+      emergencyContact: data.emergencyContact || '',
+      role: 'client' as const
+    })
     setIsProfileModalOpen(false)
+    showToastMessage('Profile updated successfully!')
     // In production, save to Supabase
     console.log('Profile updated:', data)
+  }
+
+  const handleBookSession = (data: BookingData) => {
+    setIsBookingModalOpen(false)
+    showToastMessage('Booking request sent! You will receive a confirmation soon.')
+    // In production, save to Supabase
+    console.log('Booking request:', data)
+  }
+
+  const showToastMessage = (message: string) => {
+    setToastMessage(message)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 3000)
   }
   
   return (
@@ -83,7 +108,10 @@ export default function PatientPortal() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <button className="card text-left hover:scale-105 transition-transform">
+          <button 
+            onClick={() => setIsBookingModalOpen(true)}
+            className="card text-left hover:scale-105 transition-transform"
+          >
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -249,12 +277,31 @@ export default function PatientPortal() {
         </div>
       </main>
 
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
+          <div className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-6 py-4 rounded-xl shadow-2xl flex items-center space-x-3">
+            <svg className="w-5 h-5 text-green-400 dark:text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-medium">{toastMessage}</span>
+          </div>
+        </div>
+      )}
+
       {/* Profile Modal */}
       <ProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         profileData={profileData}
         onSave={handleSaveProfile}
+      />
+
+      {/* Book Session Modal */}
+      <BookSessionModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        onSubmit={handleBookSession}
       />
     </div>
   )
