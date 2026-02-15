@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import AddSessionModal, { SessionFormData } from '@/components/AddSessionModal'
 import ProfileModal from '@/components/ProfileModal'
+import SessionNotes from '@/components/SessionNotes'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useTheme } from '@/contexts/ThemeContext'
 
@@ -36,6 +37,8 @@ export default function SchedulePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [showSessionNotes, setShowSessionNotes] = useState(false)
+  const [sessionForNotes, setSessionForNotes] = useState<Session | null>(null)
   
   // Profile data based on view category
   const [therapistProfile, setTherapistProfile] = useState({
@@ -267,6 +270,24 @@ export default function SchedulePage() {
     }
   }
 
+  const handleOpenSessionNotes = (session: Session) => {
+    setSessionForNotes(session)
+    setShowSessionNotes(true)
+    setShowSessionDetails(false)
+  }
+
+  const handleSaveSessionNotes = (notes: string) => {
+    if (sessionForNotes) {
+      const updatedSessions = sessions.map(s => 
+        s.id === sessionForNotes.id ? { ...s, notes, status: 'completed' as const } : s
+      )
+      setSessions(updatedSessions)
+      showToastMessage('Session notes saved and session marked as completed!')
+      setShowSessionNotes(false)
+      setSessionForNotes(null)
+    }
+  }
+
   // Keyboard shortcuts for better UX
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -283,6 +304,7 @@ export default function SchedulePage() {
         setShowSettingsPanel(false)
         setIsBlockTimeModalOpen(false)
         setShowDeleteConfirm(false)
+        setShowSessionNotes(false)
       }
       // Ctrl/Cmd + K: View all appointments
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -1374,28 +1396,41 @@ export default function SchedulePage() {
 
                 {/* Similarity: Secondary buttons share consistent styling - Only show for therapist view */}
                 {viewCategory === 'therapist' ? (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-3">
                     <button 
-                      onClick={() => selectedSession && handleEditSession(selectedSession)}
-                      className="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-semibold py-3 px-4 rounded-xl transition-all border border-slate-300 dark:border-slate-600 flex items-center justify-center space-x-2"
-                      title="Edit session (Ctrl+E)"
+                      onClick={() => selectedSession && handleOpenSessionNotes(selectedSession)}
+                      className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 dark:from-green-500 dark:to-green-600 dark:hover:from-green-600 dark:hover:to-green-700 text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+                      title="Add session notes"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
-                      <span>Edit</span>
+                      <span>Add Session Notes</span>
                     </button>
                     
-                    <button 
-                      onClick={() => handleDeleteSession(selectedSession)}
-                      className="bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 font-semibold py-3 px-4 rounded-xl transition-all border border-red-200 dark:border-red-800 flex items-center justify-center space-x-2"
-                      title="Cancel session (Delete)"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      <span>Cancel</span>
-                    </button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button 
+                        onClick={() => selectedSession && handleEditSession(selectedSession)}
+                        className="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-semibold py-3 px-4 rounded-xl transition-all border border-slate-300 dark:border-slate-600 flex items-center justify-center space-x-2"
+                        title="Edit session (Ctrl+E)"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span>Edit</span>
+                      </button>
+                      
+                      <button 
+                        onClick={() => handleDeleteSession(selectedSession)}
+                        className="bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 font-semibold py-3 px-4 rounded-xl transition-all border border-red-200 dark:border-red-800 flex items-center justify-center space-x-2"
+                        title="Cancel session (Delete)"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span>Cancel</span>
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <button 
@@ -1479,6 +1514,19 @@ export default function SchedulePage() {
         profileData={currentProfile}
         onSave={handleSaveProfile}
       />
+
+      {/* Session Notes Modal */}
+      {showSessionNotes && sessionForNotes && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="my-8">
+            <SessionNotes
+              sessionId={sessionForNotes.id}
+              initialNotes={sessionForNotes.notes || ''}
+              onSave={handleSaveSessionNotes}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
