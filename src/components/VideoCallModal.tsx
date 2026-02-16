@@ -50,10 +50,28 @@ export default function VideoCallModal({
       document.body.appendChild(script)
     }
 
-    const initializeDaily = () => {
+    const initializeDaily = async () => {
       if (!dailyContainerRef.current || callFrameRef.current) return
 
       try {
+        // First, create the room if it doesn't exist
+        setIsLoading(true)
+        const createRoomResponse = await fetch('/api/daily/create-room', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ roomName }),
+        })
+
+        const roomData = await createRoomResponse.json()
+
+        if (!createRoomResponse.ok) {
+          throw new Error(roomData.error || 'Failed to create room')
+        }
+
+        console.log('Room ready:', roomData)
+
         // Create Daily call frame
         const callFrame = window.DailyIframe.createFrame(dailyContainerRef.current, {
           iframeStyle: {
