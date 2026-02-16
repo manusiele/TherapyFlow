@@ -1,5 +1,5 @@
 /**
- * Video Call Utilities for Jitsi Meet Integration
+ * Video Call Utilities for Daily.co Integration
  */
 
 /**
@@ -22,35 +22,28 @@ export function generateRoomNameFromIds(therapistId: string, patientId: string, 
 }
 
 /**
- * Validate if a room name is valid
+ * Validate if a room name is valid for Daily.co
  */
 export function isValidRoomName(roomName: string): boolean {
-  return /^[a-zA-Z0-9_-]+$/.test(roomName) && roomName.length >= 8 && roomName.length <= 64
+  return /^[a-zA-Z0-9_-]+$/.test(roomName) && roomName.length >= 2 && roomName.length <= 64
 }
 
 /**
- * Get Jitsi Meet configuration for therapy sessions
+ * Get Daily.co configuration for therapy sessions
+ * Uses Daily.co hosted service at manusiele.daily.co
  */
-export function getJitsiConfig() {
+export function getDailyConfig() {
   return {
-    domain: 'meet.jit.si', // Can be changed to self-hosted domain
+    domain: 'manusiele.daily.co', // Your Daily.co subdomain
+    scriptUrl: 'https://unpkg.com/@daily-co/daily-js',
     options: {
       // Privacy & Security
-      enableLobbyChat: false,
-      enableInsecureRoomNameWarning: true,
-      doNotStoreRoom: true,
-      disableInviteFunctions: true,
-      
-      // Recording (disabled by default for privacy)
-      disableRecording: true,
+      showLeaveButton: true,
+      showFullscreenButton: true,
       
       // Quality settings
-      resolution: 720,
-      constraints: {
-        video: {
-          height: { ideal: 720, max: 1080, min: 360 }
-        }
-      }
+      videoSource: true,
+      audioSource: true,
     }
   }
 }
