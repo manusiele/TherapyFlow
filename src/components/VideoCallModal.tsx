@@ -12,7 +12,7 @@ interface VideoCallModalProps {
 
 declare global {
   interface Window {
-    JitsiMeetExternalAPI: any
+    DailyIframe: any
   }
 }
 
@@ -23,25 +23,26 @@ export default function VideoCallModal({
   displayName,
   userRole 
 }: VideoCallModalProps) {
-  const jitsiContainerRef = useRef<HTMLDivElement>(null)
-  const jitsiApiRef = useRef<any>(null)
+  const dailyContainerRef = useRef<HTMLDivElement>(null)
+  const callFrameRef = useRef<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isOpen) return
 
-    // Load Jitsi Meet API script
-    const loadJitsiScript = () => {
-      if (window.JitsiMeetExternalAPI) {
-        initializeJitsi()
+    // Load Daily.co script
+    const loadDailyScript = () => {
+      if (window.DailyIframe) {
+        initializeDaily()
         return
       }
 
       const script = document.createElement('script')
-      script.src = 'https://meet.jit.si/external_api.js'
+      script.src = 'https://unpkg.com/@daily-co/daily-js'
+      script.crossOrigin = 'anonymous'
       script.async = true
-      script.onload = () => initializeJitsi()
+      script.onload = () => initializeDaily()
       script.onerror = () => {
         setError('Failed to load video call service. Please check your internet connection.')
         setIsLoading(false)
@@ -49,106 +50,70 @@ export default function VideoCallModal({
       document.body.appendChild(script)
     }
 
-    const initializeJitsi = () => {
-      if (!jitsiContainerRef.current || jitsiApiRef.current) return
+    const initializeDaily = () => {
+      if (!dailyContainerRef.current || callFrameRef.current) return
 
       try {
-        const domain = 'meet.jit.si'
-        const options = {
-          roomName: `TherapyFlow_${roomName}`,
-          width: '100%',
-          height: '100%',
-          parentNode: jitsiContainerRef.current,
-          userInfo: {
-            displayName: displayName,
-            email: '', // Optional: can add user email
+        // Create Daily call frame
+        const callFrame = window.DailyIframe.createFrame(dailyContainerRef.current, {
+          iframeStyle: {
+            width: '100%',
+            height: '100%',
+            border: '0',
+            borderRadius: '8px',
           },
-          configOverwrite: {
-            startWithAudioMuted: false,
-            startWithVideoMuted: false,
-            enableWelcomePage: false,
-            prejoinPageEnabled: true, // Show preview before joining
-            disableDeepLinking: true,
-            enableClosePage: false,
-            // Privacy & Security
-            enableLobbyChat: false,
-            enableInsecureRoomNameWarning: true,
-            // UI Customization
-            toolbarButtons: [
-              'microphone',
-              'camera',
-              'closedcaptions',
-              'desktop',
-              'fullscreen',
-              'fodeviceselection',
-              'hangup',
-              'chat',
-              'settings',
-              'videoquality',
-              'filmstrip',
-              'stats',
-              'tileview',
-            ],
-            // Disable features not needed for therapy
-            disableInviteFunctions: true,
-            doNotStoreRoom: true, // Don't store room in recent list
-          },
-          interfaceConfigOverwrite: {
-            SHOW_JITSI_WATERMARK: false,
-            SHOW_WATERMARK_FOR_GUESTS: false,
-            SHOW_BRAND_WATERMARK: false,
-            BRAND_WATERMARK_LINK: '',
-            DEFAULT_BACKGROUND: '#1e293b',
-            DEFAULT_REMOTE_DISPLAY_NAME: userRole === 'therapist' ? 'Patient' : 'Therapist',
-            DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
-            DISABLE_PRESENCE_STATUS: true,
-            MOBILE_APP_PROMO: false,
-            HIDE_INVITE_MORE_HEADER: true,
-          },
-        }
+          showLeaveButton: true,
+          showFullscreenButton: true,
+        })
 
-        jitsiApiRef.current = new window.JitsiMeetExternalAPI(domain, options)
+        callFrameRef.current = callFrame
 
         // Event listeners
-        jitsiApiRef.current.addListener('videoConferenceJoined', () => {
+        callFrame.on('joined-meeting', () => {
           setIsLoading(false)
-          console.log('Video conference joined')
+          console.log('Joined Daily meeting')
         })
 
-        jitsiApiRef.current.addListener('videoConferenceLeft', () => {
+        callFrame.on('left-meeting', () => {
           handleClose()
         })
 
-        jitsiApiRef.current.addListener('readyToClose', () => {
-          handleClose()
-        })
-
-        jitsiApiRef.current.addListener('errorOccurred', (error: any) => {
-          console.error('Jitsi error:', error)
+        callFrame.on('error', (error: any) => {
+          console.error('Daily error:', error)
           setError('An error occurred during the video call.')
         })
 
+        // Join the room with user info
+        callFrame.join({
+          url: `https://manusiele.daily.co/${roomName}`,
+          userName: displayName,
+        }).catch((err: any) => {
+          console.error('Error joining Daily room:', err)
+          setError('Failed to join video call. Please try again.')
+          setIsLoading(false)
+        })
+
       } catch (err) {
-        console.error('Error initializing Jitsi:', err)
+        console.error('Error initializing Daily:', err)
         setError('Failed to initialize video call.')
         setIsLoading(false)
       }
     }
 
-    loadJitsiScript()
+    loadDailyScript()
 
     return () => {
-      if (jitsiApiRef.current) {
-        jitsiApiRef.current.dispose()
-        jitsiApiRef.current = null
+      if (callFrameRef.current) {
+        callFrameRef.current.destroy()
+        callFrameRef.current = null
       }
     }
-  }, [isOpen, roomName, displayName, userRole])
+  }, [isOpen, roomName, displayName])
 
   const handleClose = () => {
-    if (jitsiApiRef.current) {
-      jitsiApiRef.current.dispose()
-      jitsiApiRef.current = null
+    if (callFrameRef.current) {
+      callFrameRef.current.destroy()
+      callFrameRef.current = null
     }
     setIsLoading(true)
     setError(null)
@@ -211,7 +176,7 @@ export default function VideoCallModal({
           </div>
         )}
 
-        <div ref={jitsiContainerRef} className="w-full h-full" />
+        <div ref={dailyContainerRef} className="w-full h-full" />
       </div>
 
       {/* Footer Info */}
@@ -228,7 +193,7 @@ export default function VideoCallModal({
               <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span>HIPAA-compliant ready</span>
+              <span>Secure & Private</span>
             </div>
           </div>
           <div className="text-slate-500">
