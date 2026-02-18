@@ -46,12 +46,22 @@ export default function ResetPasswordPage() {
     }
 
     try {
+      // Check if user has a valid session
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        setError('Your reset link has expired. Please request a new password reset.')
+        setIsLoading(false)
+        return
+      }
+
       const { error: updateError } = await supabase.auth.updateUser({
         password: password
       })
 
       if (updateError) {
-        setError(updateError.message)
+        console.error('Password update error:', updateError)
+        setError(updateError.message || 'Failed to update password. Please try again.')
         setIsLoading(false)
         return
       }
@@ -63,8 +73,9 @@ export default function ResetPasswordPage() {
       setTimeout(() => {
         router.push('/auth/login')
       }, 3000)
-    } catch (err) {
-      setError('An unexpected error occurred. Please try again.')
+    } catch (err: any) {
+      console.error('Unexpected error:', err)
+      setError(err?.message || 'An unexpected error occurred. Please request a new reset link.')
       setIsLoading(false)
     }
   }
