@@ -1,6 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { sessions, patients, therapists } from '@/lib/supabase'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface ReportsAnalyticsModalProps {
   isOpen: boolean
@@ -13,39 +16,209 @@ export default function ReportsAnalyticsModal({
   onClose,
   userRole 
 }: ReportsAnalyticsModalProps) {
+  const { user } = useAuth()
   const [selectedReport, setSelectedReport] = useState<string>('overview')
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month')
   const [exportFormat, setExportFormat] = useState<'pdf' | 'csv' | 'excel'>('pdf')
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data - in production, fetch from database
-  const therapistStats = {
-    totalSessions: 156,
-    completedSessions: 142,
-    cancelledSessions: 14,
-    activePatients: 24,
-    averageSessionDuration: 52,
-    attendanceRate: 91,
-    revenue: 15600,
-    hoursWorked: 136
-  }
+  // Real data from Supabase
+  const [therapistStats, setTherapistStats] = useState({
+    totalSessions: 0,
+    completedSessions: 0,
+    cancelledSessions: 0,
+    activePatients: 0,
+    averageSessionDuration: 0,
+    attendanceRate: 0,
+    revenue: 0,
+    hoursWorked: 0
+  })
 
-  const patientStats = {
-    totalSessions: 12,
-    completedSessions: 11,
-    missedSessions: 1,
+  const [patientStats, setPatientStats] = useState({
+    totalSessions: 0,
+    completedSessions: 0,
+    missedSessions: 0,
     assessmentScores: {
-      phq9: [12, 10, 8, 7, 6],
-      gad7: [14, 12, 10, 9, 7]
+      phq9: [] as number[],
+      gad7: [] as number[]
     },
-    moodTrend: 'improving',
-    adherenceRate: 92
-  }
+    moodTrend: 'stable',
+    adherenceRate: 0
+  })
+
+  // Fetch therapist stats
+  useEffect(() => {
+    const fetchTherapistStats = async () => {
+      if (!isOpen || userRole !== 'therapist' || !user?.id) return
+
+      setIsLoading(true)
+      try {
+        // Fetch all sessions for therapist
+        const { data: sessionsData, error: sessionsError } = await sessions.getAll({ 
+          therapistId: user.id 
+        })
+
+        if (sessionsError) {
+          console.error('Error fetching sessions:', sessionsError)
+          return
+        }
+
+        // Fetch all patients for therapist
+        const { data: patientsData, error: patientsError } = await patients.getAll(user.id)
+
+        if (patientsError) {
+          console.error('Error fetching patients:', patientsError)
+          return
+        }
+
+        if (sessionsData && patientsData) {
+          const allSessions = sessionsData as any[]
+          const totalSessions = allSessions.length
+          const completedSessions = allSessions.filter(s => s.status === 'completed').length
+          const cancelledSessions = allSessions.filter(s => s.status === 'cancelled').length
+          const activePatients = patientsData.length
+
+          // Calculate average session duration
+          const totalDuration = allSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
+          const averageSessionDuration = totalSessions > 0 ? Math.round(totalDuration / totalSessions) : 0
+
+          // Calculate attendance rate
+          const scheduledSessions = allSessions.filter(s => s.status !== 'cancelled').length
+          const attendanceRate = scheduledSessions > 0 
+            ? Math.round((completedSessions / scheduledSessions) * 100) 
+            : 0
+
+          // Calculate revenue (assuming $100 per session - adjust as needed)
+          const revenue = completedSessions * 100
+
+          // Calculate hours worked
+          const hoursWorked = Math.round(totalDuration / 60)
+
+          setTherapistStats({
+            totalSessions,
+            completedSessions,
+            cancelledSessions,
+            activePatients,
+            averageSessionDuration,
+            attendanceRate,
+            revenue,
+            hoursWorked
+          })
+        }
+      } catch (err) {
+        console.error('Error loading therapist stats:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchTherapistStats()
+  }, [isOpen, userRole, user])
+
+  // Fetch patient stats
+  useEffect(() => {
+    const fetchPatientStats = async () => {
+      if (!isOpen || userRole !== 'patient' || !user?.email) return
+
+      setIsLoading(true)
+      try {
+        // Get patient data
+        const { data: patientData, error: patientError } = await patients.getByEmail(user.email)
+
+        if (patientError || !patientData) {
+          console.error('Error fetching patient:', patientError)
+          return
+        }
+
+        const patientId = (patientData as any).id
+
+        // Fetch sessions for patient
+        const { data: sessionsData, error: sessionsError } = await sessions.getAll({ 
+          patientId 
+        })
+
+        if (sessionsError) {
+          console.error('Error fetching sessions:', sessionsError)
+          return
+        }
+
+        if (sessionsData) {
+          const allSessions = sessionsData as any[]
+          const totalSessions = allSessions.length
+          const completedSessions = allSessions.filter(s => s.status === 'completed').length
+          const missedSessions = allSessions.filter(s => s.status === 'cancelled').length
+
+          // Calculate adherence rate
+          const scheduledSessions = allSessions.filter(s => s.status !== 'cancelled').length
+          const adherenceRate = scheduledSessions > 0 
+            ? Math.round((completedSessions / scheduledSessions) * 100) 
+            : 0
+
+          setPatientStats({
+            totalSessions,
+            completedSessions,
+            missedSessions,
+            assessmentScores: {
+              phq9: [],
+              gad7: []
+            },
+            moodTrend: adherenceRate > 80 ? 'improving' : 'stable',
+            adherenceRate
+          })
+        }
+      } catch (err) {
+        console.error('Error loading patient stats:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchPatientStats()
+  }, [isOpen, userRole, user])
 
   const handleExport = () => {
     console.log(`Exporting ${selectedReport} as ${exportFormat}`)
     // In production, generate and download report
     alert(`Report exported as ${exportFormat.toUpperCase()}`)
   }
+
+  // Mock chart data for visualization
+  const sessionTrendsData = [
+    { month: 'Jan', sessions: 45, completed: 42, cancelled: 3 },
+    { month: 'Feb', sessions: 52, completed: 48, cancelled: 4 },
+    { month: 'Mar', sessions: 48, completed: 45, cancelled: 3 },
+    { month: 'Apr', sessions: 58, completed: 54, cancelled: 4 },
+    { month: 'May', sessions: 62, completed: 58, cancelled: 4 },
+    { month: 'Jun', sessions: 55, completed: 51, cancelled: 4 },
+  ]
+
+  const revenueData = [
+    { month: 'Jan', revenue: 4500, expenses: 1200 },
+    { month: 'Feb', revenue: 5200, expenses: 1300 },
+    { month: 'Mar', revenue: 4800, expenses: 1250 },
+    { month: 'Apr', revenue: 5800, expenses: 1400 },
+    { month: 'May', revenue: 6200, expenses: 1450 },
+    { month: 'Jun', revenue: 5500, expenses: 1350 },
+  ]
+
+  const assessmentScoresData = [
+    { week: 'Week 1', phq9: 15, gad7: 16 },
+    { week: 'Week 2', phq9: 13, gad7: 14 },
+    { week: 'Week 3', phq9: 11, gad7: 12 },
+    { week: 'Week 4', phq9: 9, gad7: 10 },
+    { week: 'Week 5', phq9: 8, gad7: 9 },
+    { week: 'Week 6', phq9: 7, gad7: 8 },
+  ]
+
+  const moodTrendsData = [
+    { day: 'Mon', mood: 6 },
+    { day: 'Tue', mood: 7 },
+    { day: 'Wed', mood: 5 },
+    { day: 'Thu', mood: 8 },
+    { day: 'Fri', mood: 7 },
+    { day: 'Sat', mood: 8 },
+    { day: 'Sun', mood: 9 },
+  ]
 
   if (!isOpen) return null
 
@@ -260,17 +433,72 @@ export default function ReportsAnalyticsModal({
                   </div>
                 </div>
 
-                {/* Charts Placeholder */}
+                {/* Charts */}
                 <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-6 border border-slate-600/30">
                   <h4 className="font-semibold text-slate-100 mb-4">Session Trends</h4>
-                  <div className="h-64 bg-slate-800/50 rounded-lg flex items-center justify-center border border-slate-700/50">
-                    <div className="text-center text-slate-400">
-                      <svg className="w-16 h-16 mx-auto mb-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      <p className="text-slate-400">Chart visualization would appear here</p>
-                      <p className="text-sm mt-1 text-slate-500">Install chart library (Chart.js, Recharts, etc.)</p>
-                    </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={sessionTrendsData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#475569" opacity={0.3} />
+                        <XAxis dataKey="month" stroke="#94a3b8" />
+                        <YAxis stroke="#94a3b8" />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#1e293b', 
+                            border: '1px solid #475569',
+                            borderRadius: '8px',
+                            color: '#e2e8f0'
+                          }}
+                        />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="sessions" 
+                          stroke="#3b82f6" 
+                          strokeWidth={2}
+                          name="Total Sessions"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="completed" 
+                          stroke="#10b981" 
+                          strokeWidth={2}
+                          name="Completed"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="cancelled" 
+                          stroke="#ef4444" 
+                          strokeWidth={2}
+                          name="Cancelled"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Revenue Chart */}
+                <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-6 border border-slate-600/30">
+                  <h4 className="font-semibold text-slate-100 mb-4">Revenue Overview</h4>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={revenueData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#475569" opacity={0.3} />
+                        <XAxis dataKey="month" stroke="#94a3b8" />
+                        <YAxis stroke="#94a3b8" />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#1e293b', 
+                            border: '1px solid #475569',
+                            borderRadius: '8px',
+                            color: '#e2e8f0'
+                          }}
+                        />
+                        <Legend />
+                        <Bar dataKey="revenue" fill="#f59e0b" name="Revenue" />
+                        <Bar dataKey="expenses" fill="#6366f1" name="Expenses" />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
@@ -299,12 +527,63 @@ export default function ReportsAnalyticsModal({
                 {/* Progress Chart */}
                 <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-6 border border-slate-600/30">
                   <h4 className="font-semibold text-slate-100 mb-4">Assessment Score Trends</h4>
-                  <div className="h-64 bg-slate-800/50 rounded-lg flex items-center justify-center border border-slate-700/50">
-                    <div className="text-center text-slate-400">
-                      <p>PHQ-9 and GAD-7 score trends over time</p>
-                      <p className="text-sm mt-1 text-slate-500">Lower scores indicate improvement</p>
-                    </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={assessmentScoresData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#475569" opacity={0.3} />
+                        <XAxis dataKey="week" stroke="#94a3b8" />
+                        <YAxis stroke="#94a3b8" domain={[0, 20]} />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#1e293b', 
+                            border: '1px solid #475569',
+                            borderRadius: '8px',
+                            color: '#e2e8f0'
+                          }}
+                        />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="phq9" 
+                          stroke="#3b82f6" 
+                          strokeWidth={2}
+                          name="PHQ-9 (Depression)"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="gad7" 
+                          stroke="#a855f7" 
+                          strokeWidth={2}
+                          name="GAD-7 (Anxiety)"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
+                  <p className="text-xs text-slate-400 mt-2 text-center">Lower scores indicate improvement</p>
+                </div>
+
+                {/* Mood Trends Chart */}
+                <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-6 border border-slate-600/30">
+                  <h4 className="font-semibold text-slate-100 mb-4">Weekly Mood Trends</h4>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={moodTrendsData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#475569" opacity={0.3} />
+                        <XAxis dataKey="day" stroke="#94a3b8" />
+                        <YAxis stroke="#94a3b8" domain={[0, 10]} />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#1e293b', 
+                            border: '1px solid #475569',
+                            borderRadius: '8px',
+                            color: '#e2e8f0'
+                          }}
+                        />
+                        <Bar dataKey="mood" fill="#10b981" name="Mood Rating" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2 text-center">Scale: 1 (Poor) to 10 (Excellent)</p>
                 </div>
               </div>
             )}
