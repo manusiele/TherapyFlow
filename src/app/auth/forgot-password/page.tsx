@@ -26,20 +26,37 @@ export default function ForgotPasswordPage() {
         ? 'https://therapyflowclinic.vercel.app/auth/reset-password'
         : `${window.location.origin}/auth/reset-password`
 
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 15000)
+      )
+
+      const resetPromise = supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
       })
 
+      const { error: resetError } = await Promise.race([resetPromise, timeoutPromise]) as any
+
       if (resetError) {
-        setError(resetError.message)
+        console.error('Reset password error:', resetError)
+        if (resetError.message === 'Request timeout') {
+          setError('The request is taking too long. Please check your internet connection and try again.')
+        } else {
+          setError(resetError.message || 'Failed to send reset email. Please try again.')
+        }
         setIsLoading(false)
         return
       }
 
       setSuccess(true)
       setIsLoading(false)
-    } catch (err) {
-      setError('An unexpected error occurred. Please try again.')
+    } catch (err: any) {
+      console.error('Unexpected error:', err)
+      if (err?.message === 'Request timeout') {
+        setError('The request is taking too long. Please check your internet connection and try again.')
+      } else {
+        setError(err?.message || 'An unexpected error occurred. Please try again.')
+      }
       setIsLoading(false)
     }
   }
