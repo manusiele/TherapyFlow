@@ -12,7 +12,20 @@ import MoodTracker from '@/components/MoodTracker'
 import ResourcesPanel from '@/components/ResourcesPanel'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { patients } from '@/lib/supabase'
+import { patients, sessions } from '@/lib/supabase'
+
+interface Session {
+  id: string
+  therapist_id: string
+  patient_id: string
+  scheduled_at: string
+  duration_minutes: number
+  status: string
+  session_type: string
+  therapist?: {
+    name: string
+  }
+}
 
 export default function PatientPortal() {
   const { theme } = useTheme()
@@ -25,6 +38,7 @@ export default function PatientPortal() {
   const [toastMessage, setToastMessage] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([])
   const [assessmentHistory, setAssessmentHistory] = useState<Array<{
     date: string
     assessmentType: string
@@ -61,6 +75,8 @@ export default function PatientPortal() {
         }
 
         if (data) {
+          const patientId = (data as any).id
+          
           setProfileData({
             name: (data as any).name || 'Patient',
             email: (data as any).email || user.email,
@@ -69,6 +85,23 @@ export default function PatientPortal() {
             emergencyContact: (data as any).emergency_contact || '',
             role: 'client'
           })
+
+          // Fetch patient's sessions
+          if (patientId) {
+            const { data: sessionsData, error: sessionsError } = await sessions.getAll({ patientId })
+            
+            if (sessionsError) {
+              console.error('Error fetching sessions:', sessionsError)
+            } else if (sessionsData) {
+              // Filter for upcoming sessions
+              const now = new Date()
+              const upcoming = (sessionsData as any[])
+                .filter((session: any) => new Date(session.scheduled_at) >= now)
+                .sort((a: any, b: any) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+              
+              setUpcomingSessions(upcoming)
+            }
+          }
         }
       } catch (err) {
         console.error('Error loading patient profile:', err)
@@ -265,39 +298,78 @@ export default function PatientPortal() {
           <div className="card">
             <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6">Upcoming Sessions</h2>
             <div className="space-y-4">
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-medium text-slate-900 dark:text-slate-100">Dr. Sarah Johnson</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Individual Therapy</p>
-                  </div>
-                  <span className="text-xs bg-blue-600 dark:bg-blue-500 text-white px-2 py-1 rounded-full">Now</span>
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-slate-600 dark:text-slate-400 mt-2">Loading sessions...</p>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-blue-700 dark:text-blue-300 font-medium">
-                    {currentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(currentTime.getTime() + 50 * 60000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                  </span>
-                  <Link 
-                    href="/video/1"
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+              ) : upcomingSessions.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-slate-600 dark:text-slate-400">No upcoming sessions</p>
+                  <button 
+                    onClick={() => setIsBookingModalOpen(true)}
+                    className="mt-4 text-blue-600 dark:text-blue-400 hover:underline"
                   >
-                    Join Video
-                  </Link>
+                    Book a session
+                  </button>
                 </div>
-              </div>
-              
-              <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-medium text-slate-900 dark:text-slate-100">Dr. Sarah Johnson</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Follow-up Session</p>
-                  </div>
-                  <span className="text-xs bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-full">Next Week</span>
-                </div>
-                <div className="text-sm text-slate-600 dark:text-slate-400">
-                  Monday, 2:00 PM - 2:50 PM
-                </div>
-              </div>
+              ) : (
+                upcomingSessions.map((session, index) => {
+                  const sessionDate = new Date(session.scheduled_at)
+                  const endTime = new Date(sessionDate.getTime() + session.duration_minutes * 60000)
+                  const isNow = Math.abs(sessionDate.getTime() - currentTime.getTime()) < 30 * 60000 // Within 30 minutes
+                  const isToday = sessionDate.toDateString() === currentTime.toDateString()
+                  
+                  return (
+                    <div 
+                      key={session.id}
+                      className={`p-4 rounded-lg border ${
+                        isNow 
+                          ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' 
+                          : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium text-slate-900 dark:text-slate-100">
+                            {(session.therapist as any)?.name || 'Therapist'}
+                          </p>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">
+                            {session.session_type?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Therapy Session'}
+                          </p>
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          isNow 
+                            ? 'bg-blue-600 dark:bg-blue-500 text-white' 
+                            : isToday
+                            ? 'bg-green-600 dark:bg-green-500 text-white'
+                            : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'
+                        }`}>
+                          {isNow ? 'Now' : isToday ? 'Today' : sessionDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className={`font-medium ${
+                          isNow ? 'text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-slate-400'
+                        }`}>
+                          {sessionDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        </span>
+                        {isNow && (
+                          <Link 
+                            href={`/video/${session.id}`}
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                          >
+                            Join Video
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })
+              )}
             </div>
           </div>
 
