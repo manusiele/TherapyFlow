@@ -117,68 +117,70 @@ export default function ResourcesPanel() {
         </div>
       </div>
 
-      {/* Resource Modal */}
+      {/* Resource Modal - Consistent Dark Theme */}
       {selectedResource && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 flex justify-between items-center">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-700/50">
+            {/* Header - Subtle Dark Theme */}
+            <div className="sticky top-0 bg-slate-800/80 backdrop-blur-md px-6 py-5 flex justify-between items-center border-b border-slate-700/50">
               <div className="flex items-center gap-3">
-                <span className="text-4xl">{selectedResource.icon}</span>
+                <div className="w-12 h-12 bg-slate-700/50 backdrop-blur-sm rounded-xl flex items-center justify-center border border-slate-600/30">
+                  <span className="text-3xl">{selectedResource.icon}</span>
+                </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white">{selectedResource.title}</h2>
-                  <p className="text-blue-100 text-sm">{selectedResource.description}</p>
+                  <h2 className="text-2xl font-bold text-slate-100">{selectedResource.title}</h2>
+                  <p className="text-slate-400 text-sm">{selectedResource.description}</p>
                 </div>
               </div>
               <button
                 onClick={handleCloseModal}
-                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+                className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
                 aria-label="Close"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            {/* Content */}
-            <div className="p-6">
+            {/* Content - Subtle Dark Theme */}
+            <div className="p-6 bg-slate-900/50">
               {selectedResource.id === 'crisis' ? (
-                <div className="space-y-4">
-                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-4">
-                    <p className="text-sm text-red-800 dark:text-red-300 font-medium">
+                <div className="space-y-3">
+                  <div className="bg-red-900/20 border border-red-800/50 rounded-xl p-4 mb-4">
+                    <p className="text-sm text-red-300 font-medium">
                       If you're in immediate danger, please call 911 or go to your nearest emergency room.
                     </p>
                   </div>
                   {selectedResource.content.map((item, index) => (
                     <div
                       key={index}
-                      className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600"
+                      className="p-4 bg-slate-700/30 backdrop-blur-md rounded-lg border border-slate-600/30"
                     >
-                      <p className="text-slate-900 dark:text-slate-100 font-medium">{item}</p>
+                      <p className="text-slate-200 font-medium">{item}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <ul className="space-y-3">
+                <ul className="space-y-2">
                   {selectedResource.content.map((item, index) => (
                     <li
                       key={index}
-                      className="flex items-start space-x-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
+                      className="flex items-start space-x-3 p-3 hover:bg-slate-700/30 rounded-lg transition-colors"
                     >
-                      <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-blue-600 dark:text-blue-400 text-sm font-bold">{index + 1}</span>
+                      <div className="w-7 h-7 bg-blue-600/20 border border-blue-500/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-blue-400 text-sm font-bold">{index + 1}</span>
                       </div>
-                      <p className="text-slate-700 dark:text-slate-300 flex-1">{item}</p>
+                      <p className="text-slate-300 flex-1 leading-relaxed">{item}</p>
                     </li>
                   ))}
                 </ul>
               )}
 
-              <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+              <div className="mt-6 pt-6 border-t border-slate-700/50">
                 <button
                   onClick={handleCloseModal}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+                  className="w-full px-6 py-3 bg-blue-600/80 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors"
                 >
                   Close
                 </button>
