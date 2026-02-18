@@ -16,7 +16,24 @@ export function generateRoomName(sessionId: string): string {
  * This creates a consistent room name for recurring sessions
  */
 export function generateRoomNameFromIds(therapistId: string, patientId: string, sessionDate?: string): string {
-  const dateStr = sessionDate ? new Date(sessionDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+  let dateStr: string
+  
+  if (sessionDate) {
+    try {
+      const date = new Date(sessionDate)
+      if (isNaN(date.getTime())) {
+        // Invalid date, use current date
+        dateStr = new Date().toISOString().split('T')[0]
+      } else {
+        dateStr = date.toISOString().split('T')[0]
+      }
+    } catch {
+      dateStr = new Date().toISOString().split('T')[0]
+    }
+  } else {
+    dateStr = new Date().toISOString().split('T')[0]
+  }
+  
   const hash = `${therapistId}_${patientId}_${dateStr}`.replace(/-/g, '')
   return hash.substring(0, 32) // Limit length for cleaner URLs
 }
