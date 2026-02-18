@@ -12,7 +12,7 @@ export default function Home() {
     <main className="min-h-screen">
       {/* Navigation */}
       <nav className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex justify-between items-center">
             <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
               <Image 
@@ -20,14 +20,14 @@ export default function Home() {
                 alt="TherapyFlow" 
                 width={320}
                 height={64}
-                className="h-16 w-auto"
+                className="h-12 sm:h-16 w-auto"
                 priority
               />
             </Link>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <ThemeToggle />
               <div className="relative group">
-                <button className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors">
+                <button className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors text-sm sm:text-base">
                   Sign In
                 </button>
                 <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
@@ -56,7 +56,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="relative group">
-                <button className="btn-primary">
+                <button className="btn-primary text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-2.5">
                   Get Started
                 </button>
                 <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
@@ -102,7 +102,7 @@ export default function Home() {
               with our comprehensive, HIPAA-compliant platform designed for modern healthcare.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/dashboard" className="btn-primary text-lg px-8 py-4">
+              <Link href="/auth/signup" className="btn-primary text-lg px-8 py-4">
                 Start Free Trial
               </Link>
               <Link href="/demo/therapist" className="btn-secondary text-lg px-8 py-4">
