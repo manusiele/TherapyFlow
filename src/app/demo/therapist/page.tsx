@@ -43,9 +43,6 @@ export default function TherapistDemoPage() {
             </div>
             <div className="flex items-center space-x-4">
               <ThemeToggle />
-              <Link href="/auth/therapist/signup" className="btn-primary">
-                Get Started
-              </Link>
             </div>
           </div>
         </div>

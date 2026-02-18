@@ -44,9 +44,6 @@ export default function PatientDemoPage() {
             </div>
             <div className="flex items-center space-x-4">
               <ThemeToggle />
-              <Link href="/auth/patient/signup" className="btn-primary">
-                Get Started
-              </Link>
             </div>
           </div>
         </div>
