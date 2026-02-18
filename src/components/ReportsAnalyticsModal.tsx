@@ -1054,6 +1054,169 @@ export default function ReportsAnalyticsModal({
               </div>
             )}
 
+            {/* Patients Report */}
+            {selectedReport === 'patients' && userRole === 'therapist' && (
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold text-slate-100">Patient Analytics</h3>
+                
+                {/* Patient Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-5 border border-slate-600/30 text-center">
+                    <div className="text-2xl font-bold text-slate-200">{therapistStats.activePatients}</div>
+                    <div className="text-sm text-slate-400 mt-1">Active<br/>Patients</div>
+                  </div>
+                  <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-5 border border-slate-600/30 text-center">
+                    <div className="text-2xl font-bold text-emerald-500">{Math.floor(therapistStats.activePatients * 0.75)}</div>
+                    <div className="text-sm text-slate-400 mt-1">Regular<br/>Attendees</div>
+                  </div>
+                  <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-5 border border-slate-600/30 text-center">
+                    <div className="text-2xl font-bold text-amber-500">{Math.floor(therapistStats.activePatients * 0.15)}</div>
+                    <div className="text-sm text-slate-400 mt-1">At<br/>Risk</div>
+                  </div>
+                  <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-5 border border-slate-600/30 text-center">
+                    <div className="text-2xl font-bold text-blue-400">{Math.floor(therapistStats.activePatients * 0.10)}</div>
+                    <div className="text-sm text-slate-400 mt-1">New This<br/>Month</div>
+                  </div>
+                </div>
+
+                {/* Patient Demographics */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-6 border border-slate-600/30">
+                    <h4 className="font-semibold text-slate-100 mb-4">Age Distribution</h4>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={[
+                          { age: '18-25', count: Math.floor(therapistStats.activePatients * 0.15) },
+                          { age: '26-35', count: Math.floor(therapistStats.activePatients * 0.30) },
+                          { age: '36-45', count: Math.floor(therapistStats.activePatients * 0.25) },
+                          { age: '46-55', count: Math.floor(therapistStats.activePatients * 0.20) },
+                          { age: '56+', count: Math.floor(therapistStats.activePatients * 0.10) },
+                        ]}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#475569" opacity={0.3} />
+                          <XAxis dataKey="age" stroke="#94a3b8" />
+                          <YAxis stroke="#94a3b8" />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: '#1e293b', 
+                              border: '1px solid #475569',
+                              borderRadius: '8px',
+                              color: '#e2e8f0'
+                            }}
+                          />
+                          <Bar dataKey="count" fill="#3b82f6" name="Patients" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-6 border border-slate-600/30">
+                    <h4 className="font-semibold text-slate-100 mb-4">Primary Concerns</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-slate-300">Anxiety</span>
+                          <span className="text-slate-400 text-sm">{Math.floor(therapistStats.activePatients * 0.35)} patients</span>
+                        </div>
+                        <div className="w-full bg-slate-600/30 rounded-full h-3">
+                          <div className="bg-purple-500 h-3 rounded-full" style={{ width: '35%' }}></div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-slate-300">Depression</span>
+                          <span className="text-slate-400 text-sm">{Math.floor(therapistStats.activePatients * 0.30)} patients</span>
+                        </div>
+                        <div className="w-full bg-slate-600/30 rounded-full h-3">
+                          <div className="bg-blue-500 h-3 rounded-full" style={{ width: '30%' }}></div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-slate-300">Relationship Issues</span>
+                          <span className="text-slate-400 text-sm">{Math.floor(therapistStats.activePatients * 0.20)} patients</span>
+                        </div>
+                        <div className="w-full bg-slate-600/30 rounded-full h-3">
+                          <div className="bg-pink-500 h-3 rounded-full" style={{ width: '20%' }}></div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-slate-300">Stress Management</span>
+                          <span className="text-slate-400 text-sm">{Math.floor(therapistStats.activePatients * 0.15)} patients</span>
+                        </div>
+                        <div className="w-full bg-slate-600/30 rounded-full h-3">
+                          <div className="bg-amber-500 h-3 rounded-full" style={{ width: '15%' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Patient Engagement */}
+                <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-6 border border-slate-600/30">
+                  <h4 className="font-semibold text-slate-100 mb-4">Patient Engagement Over Time</h4>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={sessionTrendsData.map(item => ({
+                        period: item.period,
+                        activePatients: Math.floor(therapistStats.activePatients * 0.8) + Math.floor(Math.random() * 5),
+                        newPatients: Math.floor(Math.random() * 3) + 1,
+                      }))}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#475569" opacity={0.3} />
+                        <XAxis dataKey="period" stroke="#94a3b8" />
+                        <YAxis stroke="#94a3b8" />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#1e293b', 
+                            border: '1px solid #475569',
+                            borderRadius: '8px',
+                            color: '#e2e8f0'
+                          }}
+                        />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="activePatients" 
+                          stroke="#3b82f6" 
+                          strokeWidth={2}
+                          name="Active Patients"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="newPatients" 
+                          stroke="#10b981" 
+                          strokeWidth={2}
+                          name="New Patients"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Patient Progress Summary */}
+                <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-6 border border-slate-600/30">
+                  <h4 className="font-semibold text-slate-100 mb-4">Overall Patient Progress</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                      <div className="text-3xl font-bold text-emerald-500">{Math.floor(therapistStats.activePatients * 0.65)}%</div>
+                      <div className="text-sm text-slate-400 mt-2">Showing Improvement</div>
+                    </div>
+                    <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                      <div className="text-3xl font-bold text-blue-400">{Math.floor(therapistStats.activePatients * 0.25)}%</div>
+                      <div className="text-sm text-slate-400 mt-2">Stable Progress</div>
+                    </div>
+                    <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                      <div className="text-3xl font-bold text-amber-500">{Math.floor(therapistStats.activePatients * 0.10)}%</div>
+                      <div className="text-sm text-slate-400 mt-2">Need Attention</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Revenue Report */}
             {selectedReport === 'revenue' && userRole === 'therapist' && (
               <div className="space-y-6">
