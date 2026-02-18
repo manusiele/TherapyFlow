@@ -156,29 +156,6 @@ export default function PatientLoginPage() {
             </button>
           </form>
 
-          <div className="mt-4">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-300 dark:border-slate-600"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400">Or</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              disabled={isLoading}
-              className="mt-4 w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-medium py-3 px-4 rounded-xl transition-all border border-slate-300 dark:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span>Skip Login (Demo Mode)</span>
-            </button>
-          </div>
-
           <div className="mt-6 text-center">
             <p className="text-sm text-slate-600 dark:text-slate-400">
               Don't have an account?{' '}

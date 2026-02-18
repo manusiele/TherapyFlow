@@ -65,14 +65,14 @@ export default function MessagesModal({ isOpen, onClose, userRole }: MessagesMod
 
     try {
       if (userRole === 'therapist') {
-        const { data } = await therapists.getByEmail(user.email)
-        if (data) {
+        const { data } = await therapists.getByEmail(user.email) as { data: any }
+        if (data?.id) {
           setCurrentUserId(data.id)
           loadConversations(data.id)
         }
       } else {
-        const { data } = await patients.getByEmail(user.email)
-        if (data) {
+        const { data } = await patients.getByEmail(user.email) as { data: any }
+        if (data?.id) {
           setCurrentUserId(data.id)
           loadConversations(data.id)
         }
@@ -106,7 +106,7 @@ export default function MessagesModal({ isOpen, onClose, userRole }: MessagesMod
         ? selectedConversation.patient_id 
         : selectedConversation.therapist_id
 
-      const { data, error } = await messages.getMessages(currentUserId, otherId)
+      const { data, error } = await messages.getMessages(currentUserId, otherId) as { data: any[], error: any }
       if (error) {
         console.error('Error loading messages:', error)
         return
@@ -114,7 +114,7 @@ export default function MessagesModal({ isOpen, onClose, userRole }: MessagesMod
       setMessageList(data || [])
 
       // Mark unread messages as read
-      data?.forEach(msg => {
+      data?.forEach((msg: any) => {
         if (!msg.is_read && msg.receiver_id === currentUserId) {
           messages.markAsRead(msg.id)
         }
@@ -244,7 +244,7 @@ export default function MessagesModal({ isOpen, onClose, userRole }: MessagesMod
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                         <span className="text-white font-medium text-sm">
-                          {getConversationName(conversation).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                          {getConversationName(conversation).split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -280,7 +280,7 @@ export default function MessagesModal({ isOpen, onClose, userRole }: MessagesMod
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-medium text-sm">
-                        {getConversationName(selectedConversation).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                        {getConversationName(selectedConversation).split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                       </span>
                     </div>
                     <div>

@@ -96,7 +96,8 @@ export const therapists = {
   update: async (id: string, updates: Partial<TherapistInsert>) => {
     const { data, error } = await supabase
       .from('therapists')
-      .update(updates as any)
+      // @ts-expect-error - Supabase generated types issue with update method
+      .update(updates)
       .eq('id', id)
       .select()
       .single()
@@ -155,7 +156,8 @@ export const patients = {
   update: async (id: string, updates: Partial<PatientInsert>) => {
     const { data, error } = await supabase
       .from('patients')
-      .update(updates as any)
+      // @ts-expect-error - Supabase generated types issue with update method
+      .update(updates)
       .eq('id', id)
       .select()
       .single()
@@ -231,7 +233,8 @@ export const sessions = {
   update: async (id: string, updates: Partial<SessionInsert>) => {
     const { data, error } = await supabase
       .from('sessions')
-      .update(updates as any)
+      // @ts-expect-error - Supabase generated types issue with update method
+      .update(updates)
       .eq('id', id)
       .select()
       .single()
@@ -249,7 +252,8 @@ export const sessions = {
   updateNotes: async (id: string, notes: string) => {
     const { data, error } = await supabase
       .from('sessions')
-      .update({ notes, status: 'completed' } as any)
+      // @ts-expect-error - Supabase generated types issue with update method
+      .update({ notes, status: 'completed' })
       .eq('id', id)
       .select()
       .single()
@@ -299,7 +303,8 @@ export const messages = {
   markAsRead: async (messageId: string) => {
     const { data, error } = await supabase
       .from('messages')
-      .update({ is_read: true } as any)
+      // @ts-expect-error - Supabase generated types issue with update method
+      .update({ is_read: true })
       .eq('id', messageId)
       .select()
       .single()

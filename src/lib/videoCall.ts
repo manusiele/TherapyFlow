@@ -71,7 +71,7 @@ export function getDailyConfig() {
 export function isWebRTCSupported(): boolean {
   return !!(
     navigator.mediaDevices &&
-    navigator.mediaDevices.getUserMedia &&
+    typeof navigator.mediaDevices.getUserMedia === 'function' &&
     window.RTCPeerConnection
   )
 }
