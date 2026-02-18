@@ -10,13 +10,18 @@ import SessionNotes from '@/components/SessionNotes'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { sessions as sessionsAPI, therapists, patients } from '@/lib/supabase'
 
 interface Session {
   id: string
-  patient: string
+  patient_id: string
+  therapist_id: string
+  patient_name: string
   type: string
   time: string
+  scheduled_at: string
   duration: string
+  duration_minutes: number
   status: 'confirmed' | 'pending' | 'completed' | 'cancelled'
   notes?: string
 }
@@ -44,55 +49,121 @@ export default function SchedulePage() {
   const [showSessionNotes, setShowSessionNotes] = useState(false)
   const [sessionForNotes, setSessionForNotes] = useState<Session | null>(null)
   const [currentTime] = useState(new Date())
+  const [selectedDayForModal, setSelectedDayForModal] = useState<Date | null>(null)
+  const [showDaySessionsModal, setShowDaySessionsModal] = useState(false)
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true)
+  const [allSessions, setAllSessions] = useState<Session[]>([])
   
   // Profile data based on view category
   const [therapistProfile, setTherapistProfile] = useState<ProfileData>({
-    name: 'Dr. Sarah Johnson',
-    email: 'sarah.johnson@therapyflow.com',
-    phone: '+1 (555) 123-4567',
-    specialization: 'Clinical Psychology, Cognitive Behavioral Therapy',
-    licenseNumber: 'PSY-12345-CA',
-    bio: 'Experienced clinical psychologist specializing in CBT and trauma-informed care. Over 10 years of experience helping clients overcome anxiety, depression, and PTSD.',
+    name: 'Therapist',
+    email: '',
+    phone: '',
+    specialization: '',
+    licenseNumber: '',
+    bio: '',
     role: 'therapist' as const
   })
   
   const [clientProfile, setClientProfile] = useState<ProfileData>({
-    name: 'John Doe',
-    email: 'john.doe@email.com',
-    phone: '+1 (555) 987-6543',
+    name: 'Patient',
+    email: '',
+    phone: '',
     role: 'client' as const
   })
   
   const currentProfile = viewCategory === 'therapist' ? therapistProfile : clientProfile
 
-  // Get current time formatted
-  const getCurrentTimeFormatted = () => {
-    return currentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  // Fetch therapist profile
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user?.email) return
+
+      try {
+        const { data, error } = await therapists.getByEmail(user.email)
+        
+        if (error) {
+          console.error('Error fetching profile:', error)
+          return
+        }
+
+        if (data) {
+          setTherapistProfile({
+            name: (data as any).name || 'Therapist',
+            email: (data as any).email || user.email,
+            phone: (data as any).phone || '',
+            specialization: (data as any).specialization || '',
+            licenseNumber: (data as any).license_number || '',
+            bio: (data as any).bio || '',
+            role: 'therapist'
+          })
+        }
+      } catch (err) {
+        console.error('Error loading profile:', err)
+      }
+    }
+
+    fetchProfile()
+  }, [user])
+
+  // Fetch all sessions
+  useEffect(() => {
+    const fetchSessions = async () => {
+      if (!user?.id) return
+
+      setIsLoadingSessions(true)
+      try {
+        const { data, error } = await sessionsAPI.getAll({
+          therapistId: user.id
+        })
+
+        if (error) {
+          console.error('Error fetching sessions:', error)
+          return
+        }
+
+        if (data) {
+          // Transform sessions to match our interface
+          const transformedSessions: Session[] = (data as any[]).map(session => ({
+            id: session.id,
+            patient_id: session.patient_id,
+            therapist_id: session.therapist_id,
+            patient_name: session.patient?.name || 'Patient',
+            type: session.session_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+            time: new Date(session.scheduled_at).toLocaleTimeString('en-US', { 
+              hour: 'numeric', 
+              minute: '2-digit',
+              hour12: true 
+            }),
+            scheduled_at: session.scheduled_at,
+            duration: `${session.duration_minutes} min`,
+            duration_minutes: session.duration_minutes,
+            status: session.status,
+            notes: session.notes
+          }))
+
+          setAllSessions(transformedSessions)
+        }
+      } catch (err) {
+        console.error('Error loading sessions:', err)
+      } finally {
+        setIsLoadingSessions(false)
+      }
+    }
+
+    fetchSessions()
+  }, [user])
+
+  // Get sessions for selected date
+  const getSessionsForDate = (date: Date) => {
+    const dateStr = date.toDateString()
+    return allSessions.filter(session => {
+      const sessionDate = new Date(session.scheduled_at)
+      return sessionDate.toDateString() === dateStr
+    })
   }
 
-  const getEndTimeFormatted = (durationMin: number) => {
-    const endTime = new Date(currentTime.getTime() + durationMin * 60000)
-    return endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-  }
-
-  // Mock data - Therapist sessions (therapist's schedule)
-  const [therapistSessions, setTherapistSessions] = useState<Session[]>([
-    { id: '1', patient: 'John Doe', type: 'Individual Therapy', time: getCurrentTimeFormatted(), duration: '50 min', status: 'confirmed' },
-    { id: '2', patient: 'Jane Smith', type: 'Couples Therapy', time: '10:30 AM', duration: '60 min', status: 'confirmed' },
-    { id: '3', patient: 'Michael Brown', type: 'Initial Consultation', time: '02:00 PM', duration: '90 min', status: 'pending' },
-    { id: '4', patient: 'Emily Davis', type: 'Individual Therapy', time: '03:30 PM', duration: '50 min', status: 'confirmed' },
-    { id: '5', patient: 'Robert Wilson', type: 'Group Therapy', time: '05:00 PM', duration: '60 min', status: 'confirmed' },
-  ])
-
-  // Mock data - Client sessions (from client's perspective - their own appointments)
-  const [clientSessions, setClientSessions] = useState<Session[]>([
-    { id: 'c1', patient: 'Dr. Sarah Johnson', type: 'Individual Therapy', time: '10:00 AM', duration: '50 min', status: 'confirmed', notes: 'Weekly therapy session' },
-    { id: 'c2', patient: 'Dr. Sarah Johnson', type: 'Follow-up', time: '03:00 PM', duration: '30 min', status: 'pending', notes: 'Check-in session' },
-  ])
-
-  // Get sessions based on view category
-  const sessions = viewCategory === 'therapist' ? therapistSessions : clientSessions
-  const setSessions = viewCategory === 'therapist' ? setTherapistSessions : setClientSessions
+  const sessions = getSessionsForDate(selectedDate)
 
   // Generate week days starting from selected date
   const getWeekDays = () => {
@@ -110,23 +181,13 @@ export default function SchedulePage() {
 
   const weekDays = getWeekDays()
 
-  // Mock sessions for different days in week view
+  // Get sessions for a specific day
   const getSessionsForDay = (date: Date) => {
-    const dayOfWeek = date.getDay()
-    // Return different sessions based on day (mock data)
-    if (dayOfWeek === selectedDate.getDay()) {
-      return sessions
-    } else if (dayOfWeek === 1) { // Monday
-      return [
-        { id: 'w1', patient: 'Alice Cooper', type: 'Individual Therapy', time: '10:00 AM', duration: '50 min', status: 'confirmed' as const },
-        { id: 'w2', patient: 'Bob Martin', type: 'Group Therapy', time: '03:00 PM', duration: '60 min', status: 'confirmed' as const },
-      ]
-    } else if (dayOfWeek === 3) { // Wednesday
-      return [
-        { id: 'w3', patient: 'Carol White', type: 'Couples Therapy', time: '11:00 AM', duration: '60 min', status: 'pending' as const },
-      ]
-    }
-    return []
+    const dateStr = date.toDateString()
+    return allSessions.filter(session => {
+      const sessionDate = new Date(session.scheduled_at)
+      return sessionDate.toDateString() === dateStr
+    })
   }
 
   // Get all appointments across all days
@@ -141,16 +202,16 @@ export default function SchedulePage() {
       })
     })
 
-    // Add mock appointments for other days
+    // Add mock appointments for other days (these have 'patient' instead of 'patient_name')
     const mockAppointments = [
-      { id: 'a1', patient: 'Alice Cooper', type: 'Individual Therapy', time: '10:00 AM', duration: '50 min', status: 'confirmed' as const, date: 'Feb 10, 2026' },
-      { id: 'a2', patient: 'Bob Martin', type: 'Group Therapy', time: '03:00 PM', duration: '60 min', status: 'confirmed' as const, date: 'Feb 10, 2026' },
-      { id: 'a3', patient: 'Carol White', type: 'Couples Therapy', time: '11:00 AM', duration: '60 min', status: 'pending' as const, date: 'Feb 12, 2026' },
-      { id: 'a4', patient: 'David Lee', type: 'Individual Therapy', time: '02:00 PM', duration: '50 min', status: 'confirmed' as const, date: 'Feb 13, 2026' },
-      { id: 'a5', patient: 'Emma Stone', type: 'Family Therapy', time: '04:00 PM', duration: '90 min', status: 'pending' as const, date: 'Feb 15, 2026' },
-      { id: 'a6', patient: 'Frank Miller', type: 'Individual Therapy', time: '09:30 AM', duration: '50 min', status: 'confirmed' as const, date: 'Feb 17, 2026' },
-      { id: 'a7', patient: 'Grace Park', type: 'Group Therapy', time: '01:00 PM', duration: '60 min', status: 'completed' as const, date: 'Feb 8, 2026' },
-      { id: 'a8', patient: 'Henry Ford', type: 'Individual Therapy', time: '11:00 AM', duration: '50 min', status: 'cancelled' as const, date: 'Feb 9, 2026' },
+      { id: 'a1', patient_id: 'm1', therapist_id: user?.id || '', patient_name: 'Alice Cooper', type: 'Individual Therapy', time: '10:00 AM', scheduled_at: '2026-02-10T10:00:00', duration: '50 min', duration_minutes: 50, status: 'confirmed' as const, date: 'Feb 10, 2026' },
+      { id: 'a2', patient_id: 'm2', therapist_id: user?.id || '', patient_name: 'Bob Martin', type: 'Group Therapy', time: '03:00 PM', scheduled_at: '2026-02-10T15:00:00', duration: '60 min', duration_minutes: 60, status: 'confirmed' as const, date: 'Feb 10, 2026' },
+      { id: 'a3', patient_id: 'm3', therapist_id: user?.id || '', patient_name: 'Carol White', type: 'Couples Therapy', time: '11:00 AM', scheduled_at: '2026-02-12T11:00:00', duration: '60 min', duration_minutes: 60, status: 'pending' as const, date: 'Feb 12, 2026' },
+      { id: 'a4', patient_id: 'm4', therapist_id: user?.id || '', patient_name: 'David Lee', type: 'Individual Therapy', time: '02:00 PM', scheduled_at: '2026-02-13T14:00:00', duration: '50 min', duration_minutes: 50, status: 'confirmed' as const, date: 'Feb 13, 2026' },
+      { id: 'a5', patient_id: 'm5', therapist_id: user?.id || '', patient_name: 'Emma Stone', type: 'Family Therapy', time: '04:00 PM', scheduled_at: '2026-02-15T16:00:00', duration: '90 min', duration_minutes: 90, status: 'pending' as const, date: 'Feb 15, 2026' },
+      { id: 'a6', patient_id: 'm6', therapist_id: user?.id || '', patient_name: 'Frank Miller', type: 'Individual Therapy', time: '09:30 AM', scheduled_at: '2026-02-17T09:30:00', duration: '50 min', duration_minutes: 50, status: 'confirmed' as const, date: 'Feb 17, 2026' },
+      { id: 'a7', patient_id: 'm7', therapist_id: user?.id || '', patient_name: 'Grace Park', type: 'Group Therapy', time: '01:00 PM', scheduled_at: '2026-02-08T13:00:00', duration: '60 min', duration_minutes: 60, status: 'completed' as const, date: 'Feb 8, 2026' },
+      { id: 'a8', patient_id: 'm8', therapist_id: user?.id || '', patient_name: 'Henry Ford', type: 'Individual Therapy', time: '11:00 AM', scheduled_at: '2026-02-09T11:00:00', duration: '50 min', duration_minutes: 50, status: 'cancelled' as const, date: 'Feb 9, 2026' },
     ]
 
     return [...allAppointments, ...mockAppointments].sort((a, b) => 
@@ -177,48 +238,97 @@ export default function SchedulePage() {
     return getAllAppointments().filter(appointment => appointment.status === status).length
   }
 
-  const handleAddSession = (sessionData: SessionFormData) => {
-    if (editingSession) {
-      // Update existing session
-      const updatedSessions = sessions.map(session => {
-        if (session.id === editingSession.id) {
-          return {
-            ...session,
-            patient: editingSession.patient, // Keep same patient for now
-            type: sessionData.session_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            time: new Date(sessionData.scheduled_at).toLocaleTimeString('en-US', { 
+  const handleAddSession = async (sessionData: SessionFormData) => {
+    if (!user?.id) return
+
+    try {
+      if (editingSession) {
+        // Update existing session
+        const { data, error } = await sessionsAPI.update(editingSession.id, {
+          patient_id: sessionData.patient_id,
+          session_type: sessionData.session_type,
+          scheduled_at: sessionData.scheduled_at,
+          duration_minutes: sessionData.duration_minutes,
+          notes: sessionData.notes
+        })
+
+        if (error) {
+          console.error('Error updating session:', error)
+          showToastMessage('Failed to update session')
+          return
+        }
+
+        // Refresh sessions list
+        const { data: updatedSessions } = await sessionsAPI.getAll({ therapistId: user.id })
+        if (updatedSessions) {
+          const transformedSessions: Session[] = (updatedSessions as any[]).map(session => ({
+            id: session.id,
+            patient_id: session.patient_id,
+            therapist_id: session.therapist_id,
+            patient_name: session.patient?.name || 'Patient',
+            type: session.session_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+            time: new Date(session.scheduled_at).toLocaleTimeString('en-US', { 
               hour: 'numeric', 
               minute: '2-digit',
               hour12: true 
             }),
-            duration: `${sessionData.duration_minutes} min`,
-            notes: sessionData.notes
-          }
+            scheduled_at: session.scheduled_at,
+            duration: `${session.duration_minutes} min`,
+            duration_minutes: session.duration_minutes,
+            status: session.status,
+            notes: session.notes
+          }))
+          setAllSessions(transformedSessions)
         }
-        return session
-      })
-      
-      setSessions(updatedSessions)
-      showToastMessage('Session updated successfully!')
-      setEditingSession(null)
-    } else {
-      // Add new session
-      const newSession: Session = {
-        id: String(sessions.length + 1),
-        patient: 'New Patient', // Would lookup from patient_id
-        type: sessionData.session_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        time: new Date(sessionData.scheduled_at).toLocaleTimeString('en-US', { 
-          hour: 'numeric', 
-          minute: '2-digit',
-          hour12: true 
-        }),
-        duration: `${sessionData.duration_minutes} min`,
-        status: 'pending',
-        notes: sessionData.notes
+
+        showToastMessage('Session updated successfully!')
+        setEditingSession(null)
+      } else {
+        // Add new session
+        const { data, error } = await sessionsAPI.create({
+          therapist_id: user.id,
+          patient_id: sessionData.patient_id,
+          session_type: sessionData.session_type,
+          scheduled_at: sessionData.scheduled_at,
+          duration_minutes: sessionData.duration_minutes,
+          status: 'pending',
+          notes: sessionData.notes
+        })
+
+        if (error) {
+          console.error('Error creating session:', error)
+          showToastMessage('Failed to create session')
+          return
+        }
+
+        // Refresh sessions list
+        const { data: updatedSessions } = await sessionsAPI.getAll({ therapistId: user.id })
+        if (updatedSessions) {
+          const transformedSessions: Session[] = (updatedSessions as any[]).map(session => ({
+            id: session.id,
+            patient_id: session.patient_id,
+            therapist_id: session.therapist_id,
+            patient_name: session.patient?.name || 'Patient',
+            type: session.session_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+            time: new Date(session.scheduled_at).toLocaleTimeString('en-US', { 
+              hour: 'numeric', 
+              minute: '2-digit',
+              hour12: true 
+            }),
+            scheduled_at: session.scheduled_at,
+            duration: `${session.duration_minutes} min`,
+            duration_minutes: session.duration_minutes,
+            status: session.status,
+            notes: session.notes
+          }))
+          setAllSessions(transformedSessions)
+        }
+
+        showToastMessage('Session added successfully!')
       }
-      
-      setSessions([...sessions, newSession])
-      showToastMessage('Session added successfully!')
+    } catch (err) {
+      console.error('Error saving session:', err)
+      showToastMessage('Failed to save session')
     }
   }
 
@@ -275,13 +385,48 @@ export default function SchedulePage() {
     setShowDeleteConfirm(true)
   }
 
-  const confirmDeleteSession = () => {
-    if (sessionToDelete) {
-      setSessions(sessions.filter(s => s.id !== sessionToDelete.id))
-      showToastMessage(`Session with ${sessionToDelete.patient} cancelled successfully`)
+  const confirmDeleteSession = async () => {
+    if (!sessionToDelete || !user?.id) return
+
+    try {
+      const { error } = await sessionsAPI.delete(sessionToDelete.id)
+
+      if (error) {
+        console.error('Error deleting session:', error)
+        showToastMessage('Failed to cancel session')
+        return
+      }
+
+      // Refresh sessions list
+      const { data: updatedSessions } = await sessionsAPI.getAll({ therapistId: user.id })
+      if (updatedSessions) {
+        const transformedSessions: Session[] = (updatedSessions as any[]).map(session => ({
+          id: session.id,
+          patient_id: session.patient_id,
+          therapist_id: session.therapist_id,
+          patient_name: session.patient?.name || 'Patient',
+          type: session.session_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+          time: new Date(session.scheduled_at).toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+          }),
+          scheduled_at: session.scheduled_at,
+          duration: `${session.duration_minutes} min`,
+          duration_minutes: session.duration_minutes,
+          status: session.status,
+          notes: session.notes
+        }))
+        setAllSessions(transformedSessions)
+      }
+
+      showToastMessage(`Session with ${sessionToDelete.patient_name} cancelled successfully`)
       setShowDeleteConfirm(false)
       setSessionToDelete(null)
       setShowSessionDetails(false)
+    } catch (err) {
+      console.error('Error cancelling session:', err)
+      showToastMessage('Failed to cancel session')
     }
   }
 
@@ -291,16 +436,53 @@ export default function SchedulePage() {
     setShowSessionDetails(false)
   }
 
-  const handleSaveSessionNotes = (notes: string) => {
-    if (sessionForNotes) {
-      const updatedSessions = sessions.map(s => 
-        s.id === sessionForNotes.id ? { ...s, notes, status: 'completed' as const } : s
-      )
-      setSessions(updatedSessions)
+  const handleSaveSessionNotes = async (notes: string) => {
+    if (!sessionForNotes || !user?.id) return
+
+    try {
+      const { error } = await sessionsAPI.updateNotes(sessionForNotes.id, notes)
+
+      if (error) {
+        console.error('Error saving notes:', error)
+        showToastMessage('Failed to save session notes')
+        return
+      }
+
+      // Refresh sessions list
+      const { data: updatedSessions } = await sessionsAPI.getAll({ therapistId: user.id })
+      if (updatedSessions) {
+        const transformedSessions: Session[] = (updatedSessions as any[]).map(session => ({
+          id: session.id,
+          patient_id: session.patient_id,
+          therapist_id: session.therapist_id,
+          patient_name: session.patient?.name || 'Patient',
+          type: session.session_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+          time: new Date(session.scheduled_at).toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+          }),
+          scheduled_at: session.scheduled_at,
+          duration: `${session.duration_minutes} min`,
+          duration_minutes: session.duration_minutes,
+          status: session.status,
+          notes: session.notes
+        }))
+        setAllSessions(transformedSessions)
+      }
+
       showToastMessage('Session notes saved and session marked as completed!')
       setShowSessionNotes(false)
       setSessionForNotes(null)
+    } catch (err) {
+      console.error('Error saving notes:', err)
+      showToastMessage('Failed to save session notes')
     }
+  }
+
+  const handleDayClick = (day: Date) => {
+    setSelectedDayForModal(day)
+    setShowDaySessionsModal(true)
   }
 
   // Redirect to login if not authenticated
@@ -512,9 +694,11 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        {/* Sessions List */}
-        <div className="space-y-4">
-          {view === 'day' ? (
+        {/* Main Content Grid */}
+        <div className={view === 'week' ? '' : 'grid grid-cols-1 lg:grid-cols-3 gap-6'}>
+          {/* Sessions List */}
+          <div className={view === 'week' ? 'space-y-4' : 'lg:col-span-2 space-y-4'}>
+            {view === 'day' ? (
             /* Day View */
             <>
               {sessions.length === 0 ? (
@@ -552,14 +736,14 @@ export default function SchedulePage() {
                         <div className="flex items-center space-x-4 flex-1">
                           <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-white font-semibold text-sm">
-                              {session.patient.split(' ').map(n => n[0]).join('')}
+                              {session.patient_name.split(' ').map(n => n[0]).join('')}
                             </span>
                           </div>
                           
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                                {session.patient}
+                                {session.patient_name}
                               </h3>
                               <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
                                 session.status === 'confirmed' 
@@ -612,173 +796,139 @@ export default function SchedulePage() {
               )}
             </>
           ) : (
-            /* Week View */
-            <div className="card">
-              <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6">
-                Week Overview
-              </h2>
-              
-              <div className="space-y-3">
-                {sessions.map((session) => (
-                  <div 
-                    key={session.id}
-                    onClick={() => handleSessionClick(session)}
-                    className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200 dark:border-slate-600"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 flex-1">
-                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center flex-shrink-0">
-                              <span className="text-blue-700 dark:text-blue-300 font-medium text-sm">
-                                {session.patient.split(' ').map(n => n[0]).join('')}
-                              </span>
-                            </div>
-                            
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3 mb-1">
-                                <h3 className="font-semibold text-slate-900 dark:text-slate-100">{session.patient}</h3>
-                                <span className={`text-xs px-2 py-1 rounded-full border ${getStatusColor(session.status)}`}>
-                                  {session.status}
-                                </span>
-                              </div>
-                              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{session.type}</p>
-                              <div className="flex items-center space-x-4 text-sm text-slate-500 dark:text-slate-500">
-                                <span className="flex items-center">
-                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  {session.time}
-                                </span>
-                                <span className="flex items-center">
-                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                  </svg>
-                                  {session.duration}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex space-x-2">
-                            <button className="p-2 hover:bg-white dark:hover:bg-slate-600 rounded-lg transition-colors">
-                              <svg className="w-5 h-5 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                            <button className="p-2 hover:bg-white dark:hover:bg-slate-600 rounded-lg transition-colors">
-                              <svg className="w-5 h-5 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Week View */
-              <div className="card">
-                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-6">
-                  Week Overview
-                </h2>
-                
-                <div className="grid grid-cols-7 gap-3">
+              /* Week View - Consistent, Subtle Design */
+              <div className="space-y-6">
+                {/* Week Grid - Consistent Styling */}
+                <div className="grid grid-cols-7 gap-2">
                   {weekDays.map((day, index) => {
                     const daySessions = getSessionsForDay(day)
                     const isToday = day.toDateString() === new Date().toDateString()
-                    const isSelected = day.toDateString() === selectedDate.toDateString()
+                    const sessionCount = daySessions.length
                     
                     return (
                       <div 
                         key={index}
-                        className={`rounded-lg border-2 transition-all ${
-                          isSelected 
-                            ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
-                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50'
+                        onClick={() => handleDayClick(day)}
+                        className={`group relative rounded-lg p-3 cursor-pointer transition-all hover:scale-[1.03] backdrop-blur-md ${
+                          isToday 
+                            ? 'bg-blue-500/10 dark:bg-blue-500/20 border-2 border-blue-500/40 dark:border-blue-400/40 shadow-sm' 
+                            : sessionCount > 0
+                            ? 'bg-white/60 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50 hover:border-blue-400/30 dark:hover:border-blue-500/30 hover:shadow-sm'
+                            : 'bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200/30 dark:border-slate-700/30 hover:border-slate-300/50 dark:hover:border-slate-600/50'
                         }`}
                       >
-                        <div className={`p-3 text-center border-b ${
-                          isSelected 
-                            ? 'border-blue-200 dark:border-blue-700' 
-                            : 'border-slate-200 dark:border-slate-700'
-                        }`}>
-                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                            {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                        {/* Session Count Badge - Consistent Blue */}
+                        {sessionCount > 0 && (
+                          <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-blue-500 dark:bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm">
+                            {sessionCount}
                           </div>
-                          <div className={`text-lg font-bold ${
+                        )}
+                        
+                        {/* Day Content */}
+                        <div className="text-center">
+                          <div className={`text-[9px] font-semibold uppercase tracking-wider mb-1 ${
                             isToday 
                               ? 'text-blue-600 dark:text-blue-400' 
-                              : isSelected
-                              ? 'text-blue-700 dark:text-blue-300'
-                              : 'text-slate-900 dark:text-slate-100'
+                              : 'text-slate-500 dark:text-slate-400'
+                          }`}>
+                            {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                          </div>
+                          
+                          <div className={`text-2xl font-bold leading-none mb-0.5 ${
+                            isToday 
+                              ? 'text-blue-600 dark:text-blue-400' 
+                              : sessionCount > 0
+                              ? 'text-slate-900 dark:text-slate-100'
+                              : 'text-slate-400 dark:text-slate-600'
                           }`}>
                             {day.getDate()}
                           </div>
-                          {isToday && (
-                            <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Today</div>
-                          )}
+                          
+                          <div className={`text-[9px] font-medium ${
+                            isToday 
+                              ? 'text-blue-500 dark:text-blue-400' 
+                              : 'text-slate-500 dark:text-slate-400'
+                          }`}>
+                            {day.toLocaleDateString('en-US', { month: 'short' })}
+                          </div>
                         </div>
                         
-                        <div className="p-2 space-y-2 min-h-[200px]">
-                          {daySessions.length === 0 ? (
-                            <div className="text-center py-4">
-                              <div className="text-xs text-slate-400 dark:text-slate-500">No sessions</div>
-                            </div>
-                          ) : (
-                            daySessions.map((session) => (
+                        {/* Status Indicators - Subtle Colors */}
+                        {sessionCount > 0 && (
+                          <div className="mt-2 flex justify-center gap-0.5">
+                            {daySessions.slice(0, 5).map((session, idx) => (
                               <div 
-                                key={session.id}
-                                onClick={() => handleSessionClick(session)}
-                                className={`p-2 rounded text-xs cursor-pointer transition-all hover:scale-105 ${
-                                  session.status === 'confirmed'
-                                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50'
-                                    : 'bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
+                                key={idx}
+                                className={`w-1 h-1 rounded-full ${
+                                  session.status === 'confirmed' 
+                                    ? 'bg-emerald-500 dark:bg-emerald-400' 
+                                    : session.status === 'pending'
+                                    ? 'bg-amber-500 dark:bg-amber-400'
+                                    : session.status === 'completed'
+                                    ? 'bg-blue-500 dark:bg-blue-400'
+                                    : 'bg-slate-400 dark:bg-slate-500'
                                 }`}
-                              >
-                                <div className="font-semibold text-slate-900 dark:text-slate-100 truncate mb-1">
-                                  {session.patient}
-                                </div>
-                                <div className="text-slate-600 dark:text-slate-400 flex items-center">
-                                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  {session.time}
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
+                              />
+                            ))}
+                            {sessionCount > 5 && (
+                              <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+                            )}
+                          </div>
+                        )}
                       </div>
                     )
                   })}
                 </div>
 
-                {/* Week Summary */}
-                <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                        {weekDays.reduce((acc, day) => acc + getSessionsForDay(day).length, 0)}
-                      </div>
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Total Sessions</div>
+                {/* Week Summary - Consistent Subtle Design */}
+                <div className="flex items-center justify-center gap-8 py-4 px-6 backdrop-blur-md bg-white/60 dark:bg-slate-800/60 rounded-xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                        {weekDays.reduce((acc, day) => acc + getSessionsForDay(day).length, 0)}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Sessions</div>
+                    </div>
+                  </div>
+
+                  <div className="w-px h-10 bg-slate-200/50 dark:bg-slate-700/50" />
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                         {weekDays.reduce((acc, day) => 
                           acc + getSessionsForDay(day).filter(s => s.status === 'confirmed').length, 0
                         )}
                       </div>
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Confirmed</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Confirmed</div>
+                    </div>
+                  </div>
+
+                  <div className="w-px h-10 bg-slate-200/50 dark:bg-slate-700/50" />
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                      <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                         {weekDays.reduce((acc, day) => 
                           acc + getSessionsForDay(day).filter(s => s.status === 'pending').length, 0
                         )}
                       </div>
-                      <div className="text-sm text-slate-600 dark:text-slate-400">Scheduled</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Pending</div>
                     </div>
                   </div>
                 </div>
@@ -786,8 +936,9 @@ export default function SchedulePage() {
             )}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
+          {/* Sidebar - Only show in day view */}
+          {view === 'day' && (
+            <div className="space-y-6">
             {/* Mini Calendar */}
             <div className="card">
               <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">Calendar</h3>
@@ -957,6 +1108,7 @@ export default function SchedulePage() {
               </div>
             </div>
           </div>
+          )}
         </div>
       </main>
 
@@ -1280,14 +1432,14 @@ export default function SchedulePage() {
                         <div className="flex items-start space-x-4 flex-1">
                           <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-blue-700 dark:text-blue-300 font-medium text-sm">
-                              {appointment.patient.split(' ').map(n => n[0]).join('')}
+                              {appointment.patient_name.split(' ').map((n: string) => n[0]).join('')}
                             </span>
                           </div>
                           
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-1">
                               <h3 className="font-semibold text-slate-900 dark:text-slate-100">
-                                {appointment.patient}
+                                {appointment.patient_name}
                               </h3>
                               <span className={`text-xs px-2 py-1 rounded-full border ${getStatusColor(appointment.status)}`}>
                                 {appointment.status}
@@ -1360,45 +1512,36 @@ export default function SchedulePage() {
         </div>
       )}
 
-      {/* Session Details Modal - Gestalt Principles Applied */}
+      {/* Session Details Modal - Subtle Dark Theme */}
       {showSessionDetails && selectedSession && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden">
-            {/* Proximity: Header groups patient identity elements together */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 px-8 py-6 border-b border-blue-700 dark:border-blue-600">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-slate-800/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-700/50">
+            {/* Header - Subtle Blue */}
+            <div className="bg-slate-800 border-b border-slate-700 px-8 py-6">
               <div className="flex items-center justify-between">
-                {/* Proximity & Closure: Avatar and info grouped, status badge completes the visual */}
                 <div className="flex items-center space-x-4">
                   <div className="relative">
-                    <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center border-2 border-white/30">
-                      <span className="text-white font-bold text-2xl">
-                        {selectedSession.patient.split(' ').map(n => n[0]).join('')}
+                    <div className="w-16 h-16 bg-slate-700/50 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-slate-600/50">
+                      <span className="text-slate-200 font-bold text-2xl">
+                        {selectedSession.patient_name.split(' ').map(n => n[0]).join('')}
                       </span>
                     </div>
-                    {/* Closure: Status indicator completes the avatar */}
-                    <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white ${
-                      selectedSession.status === 'confirmed' ? 'bg-green-500' :
-                      selectedSession.status === 'pending' ? 'bg-yellow-500' :
-                      selectedSession.status === 'completed' ? 'bg-blue-500' :
-                      'bg-red-500'
+                    <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-slate-800 ${
+                      selectedSession.status === 'confirmed' ? 'bg-emerald-500/80' :
+                      selectedSession.status === 'pending' ? 'bg-amber-500/80' :
+                      'bg-slate-500'
                     }`}></div>
                   </div>
                   
                   <div>
-                    <h2 className="text-2xl font-bold text-white">
-                      {selectedSession.patient}
+                    <h2 className="text-2xl font-bold text-slate-100">
+                      {selectedSession.patient_name}
                     </h2>
-                    {/* Similarity: Badges use consistent styling */}
                     <div className="flex items-center space-x-2 mt-1">
-                      <span className="px-3 py-1 bg-white/20 rounded-full text-white text-sm font-medium">
+                      <span className="px-3 py-1 bg-slate-700/50 backdrop-blur-sm rounded-full text-slate-300 text-sm font-medium">
                         {selectedSession.type}
                       </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                        selectedSession.status === 'confirmed' ? 'bg-green-500/90 text-white' :
-                        selectedSession.status === 'pending' ? 'bg-yellow-500/90 text-white' :
-                        selectedSession.status === 'completed' ? 'bg-blue-500/90 text-white' :
-                        'bg-red-500/90 text-white'
-                      }`}>
+                      <span className="px-3 py-1 bg-slate-700/50 rounded-full text-slate-300 text-xs font-medium uppercase">
                         {selectedSession.status}
                       </span>
                     </div>
@@ -1407,82 +1550,55 @@ export default function SchedulePage() {
                 
                 <button 
                   onClick={() => setShowSessionDetails(false)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                  aria-label="Close modal"
+                  className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
                 >
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
             </div>
 
-            {/* Content with Gestalt Principles */}
-            <div className="p-8 space-y-6">
-              {/* Similarity & Proximity: Info cards use consistent structure and are grouped */}
+            {/* Content - Subtle Cards */}
+            <div className="p-8 space-y-6 bg-slate-900/50">
+              {/* Info Cards - Consistent Subtle Design */}
               <div className="grid grid-cols-3 gap-4">
-                {/* Proximity: Icon and text grouped within each card */}
-                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                      <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Time</div>
+                <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-4 border border-slate-600/30">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Time</div>
                   </div>
-                  <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{selectedSession.time}</div>
+                  <div className="text-xl font-bold text-slate-200">{selectedSession.time}</div>
                 </div>
 
-                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                      <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Duration</div>
+                <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-4 border border-slate-600/30">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Duration</div>
                   </div>
-                  <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{selectedSession.duration}</div>
+                  <div className="text-xl font-bold text-slate-200">{selectedSession.duration}</div>
                 </div>
 
-                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                      <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Type</div>
+                <div className="bg-slate-700/30 backdrop-blur-md rounded-xl p-4 border border-slate-600/30">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</div>
                   </div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight">{selectedSession.type}</div>
+                  <div className="text-sm font-bold text-slate-200 leading-tight">{selectedSession.type}</div>
                 </div>
               </div>
 
-              {/* Proximity: Notes section groups icon with content */}
-              {selectedSession.notes && (
-                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-5 border border-slate-200 dark:border-slate-600">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Session Notes</div>
-                      <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{selectedSession.notes}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Continuity: Action buttons flow from primary to secondary with visual hierarchy */}
+              {/* Action Buttons - Subtle Theme */}
               <div className="space-y-3 pt-2">
-                {/* Figure/Ground: Primary action stands out with stronger visual weight */}
                 <Link
                   href={`/video/${selectedSession.id}`}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-500 dark:to-blue-600 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
-                  title="Join video call (Ctrl+V)"
+                  className="w-full bg-blue-600/80 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-xl transition-all flex items-center justify-center space-x-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -1490,13 +1606,11 @@ export default function SchedulePage() {
                   <span>Join Video Call</span>
                 </Link>
 
-                {/* Similarity: Secondary buttons share consistent styling - Only show for therapist view */}
                 {viewCategory === 'therapist' ? (
                   <div className="space-y-3">
                     <button 
                       onClick={() => selectedSession && handleOpenSessionNotes(selectedSession)}
-                      className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 dark:from-green-500 dark:to-green-600 dark:hover:from-green-600 dark:hover:to-green-700 text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
-                      title="Add session notes"
+                      className="w-full bg-emerald-600/80 hover:bg-emerald-600 text-white font-semibold py-4 px-6 rounded-xl transition-all flex items-center justify-center space-x-2"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -1507,8 +1621,7 @@ export default function SchedulePage() {
                     <div className="grid grid-cols-2 gap-3">
                       <button 
                         onClick={() => selectedSession && handleEditSession(selectedSession)}
-                        className="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-semibold py-3 px-4 rounded-xl transition-all border border-slate-300 dark:border-slate-600 flex items-center justify-center space-x-2"
-                        title="Edit session (Ctrl+E)"
+                        className="bg-slate-700/50 hover:bg-slate-700 text-slate-300 font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center space-x-2 border border-slate-600/30"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -1518,8 +1631,7 @@ export default function SchedulePage() {
                       
                       <button 
                         onClick={() => handleDeleteSession(selectedSession)}
-                        className="bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 font-semibold py-3 px-4 rounded-xl transition-all border border-red-200 dark:border-red-800 flex items-center justify-center space-x-2"
-                        title="Cancel session (Delete)"
+                        className="bg-slate-700/50 hover:bg-red-900/30 text-slate-300 hover:text-red-400 border border-slate-600/30 hover:border-red-800/50 font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center space-x-2"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1531,7 +1643,7 @@ export default function SchedulePage() {
                 ) : (
                   <button 
                     onClick={() => setShowSessionDetails(false)}
-                    className="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-semibold py-3 px-4 rounded-xl transition-all border border-slate-300 dark:border-slate-600"
+                    className="w-full bg-slate-700/50 hover:bg-slate-700 text-slate-300 font-semibold py-3 px-4 rounded-xl transition-all border border-slate-600/30"
                   >
                     Close
                   </button>
@@ -1563,7 +1675,7 @@ export default function SchedulePage() {
                 You are about to cancel the session with:
               </p>
               <p className="font-semibold text-slate-900 dark:text-slate-100">
-                {sessionToDelete.patient}
+                {sessionToDelete.patient_name}
               </p>
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 {sessionToDelete.type} • {sessionToDelete.time}
@@ -1620,6 +1732,128 @@ export default function SchedulePage() {
               initialNotes={sessionForNotes.notes || ''}
               onSave={handleSaveSessionNotes}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Day Sessions Modal - Dark Theme with Colored Borders */}
+      {showDaySessionsModal && selectedDayForModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden border border-slate-700/50">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-700/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-100">
+                    {selectedDayForModal.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                  </h2>
+                  <p className="text-sm text-slate-400 mt-1">
+                    {getSessionsForDay(selectedDayForModal).length} {getSessionsForDay(selectedDayForModal).length === 1 ? 'session' : 'sessions'} scheduled
+                  </p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setShowDaySessionsModal(false)
+                    setSelectedDayForModal(null)
+                  }}
+                  className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Sessions List */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-3 max-h-[calc(90vh-200px)]">
+              {getSessionsForDay(selectedDayForModal).length === 0 ? (
+                <div className="text-center py-12">
+                  <svg className="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-slate-400">No sessions scheduled for this day</p>
+                </div>
+              ) : (
+                getSessionsForDay(selectedDayForModal).map((session) => (
+                  <div 
+                    key={session.id}
+                    onClick={() => {
+                      setShowDaySessionsModal(false)
+                      handleSessionClick(session)
+                    }}
+                    className={`group p-4 rounded-xl cursor-pointer transition-all hover:bg-slate-700/30 border-2 ${
+                      session.status === 'confirmed' 
+                        ? 'border-emerald-500/50 hover:border-emerald-500/70' 
+                        : session.status === 'pending'
+                        ? 'border-amber-500/50 hover:border-amber-500/70'
+                        : 'border-slate-600/50 hover:border-slate-600/70'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-bold text-sm">
+                            {session.patient_name.split(' ').map(n => n[0]).join('')}
+                          </span>
+                        </div>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-base font-semibold text-slate-100">
+                              {session.patient_name}
+                            </h3>
+                            <span className={`text-xs font-medium ${
+                              session.status === 'confirmed' 
+                                ? 'text-emerald-400' 
+                                : session.status === 'pending'
+                                ? 'text-amber-400'
+                                : 'text-slate-400'
+                            }`}>
+                              {session.status}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-400 mb-2">
+                            {session.type}
+                          </p>
+                          <div className="flex items-center gap-4 text-sm text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {session.time}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              {session.duration}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <svg className="w-5 h-5 text-slate-500 group-hover:text-slate-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-700/50">
+              <button
+                onClick={() => {
+                  setShowDaySessionsModal(false)
+                  setSelectedDayForModal(null)
+                }}
+                className="w-full px-4 py-3 bg-blue-600/80 hover:bg-blue-600 text-white rounded-xl transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

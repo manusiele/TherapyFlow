@@ -21,10 +21,14 @@ export interface SessionFormData {
 
 interface Session {
   id: string
-  patient: string
+  patient_id: string
+  therapist_id: string
+  patient_name: string
   type: string
   time: string
+  scheduled_at: string
   duration: string
+  duration_minutes: number
   status: 'confirmed' | 'pending' | 'completed' | 'cancelled'
   notes?: string
 }
@@ -95,27 +99,32 @@ export default function AddSessionModal({ isOpen, onClose, onSubmit, editSession
   useEffect(() => {
     if (editSession && patientsList.length > 0) {
       // Find patient ID by name
-      const patient = patientsList.find(p => p.name === editSession.patient)
+      const patient = patientsList.find(p => p.name === editSession.patient_name)
       
-      // Convert time to datetime-local format
-      const today = new Date().toISOString().split('T')[0]
-      const timeStr = editSession.time
-      const [time, period] = timeStr.split(' ')
-      let [hours, minutes] = time.split(':').map(Number)
+      // Use the scheduled_at directly if available, otherwise convert time
+      let scheduled_at = editSession.scheduled_at
       
-      if (period === 'PM' && hours !== 12) hours += 12
-      if (period === 'AM' && hours === 12) hours = 0
-      
-      const scheduled_at = `${today}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
-      
-      // Convert duration to minutes
-      const duration_minutes = parseInt(editSession.duration)
+      if (!scheduled_at || !scheduled_at.includes('T')) {
+        // Fallback: Convert time to datetime-local format
+        const today = new Date().toISOString().split('T')[0]
+        const timeStr = editSession.time
+        const [time, period] = timeStr.split(' ')
+        let [hours, minutes] = time.split(':').map(Number)
+        
+        if (period === 'PM' && hours !== 12) hours += 12
+        if (period === 'AM' && hours === 12) hours = 0
+        
+        scheduled_at = `${today}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+      } else {
+        // Format existing scheduled_at for datetime-local input
+        scheduled_at = new Date(scheduled_at).toISOString().slice(0, 16)
+      }
       
       setFormData({
-        patient_id: patient?.id || '',
+        patient_id: patient?.id || editSession.patient_id || '',
         session_type: editSession.type.toLowerCase().replace(/ /g, '_'),
         scheduled_at,
-        duration_minutes,
+        duration_minutes: editSession.duration_minutes,
         notes: editSession.notes || ''
       })
     } else {
