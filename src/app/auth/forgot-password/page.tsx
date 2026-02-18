@@ -26,7 +26,13 @@ export default function ForgotPasswordPage() {
     setError('')
 
     try {
-      const { error: otpError } = await supabase.auth.resetPasswordForEmail(email)
+      // Use signInWithOtp for recovery to get OTP code instead of link
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false, // Don't create new user, only send to existing users
+        }
+      })
 
       if (otpError) {
         setError(otpError.message)
@@ -51,7 +57,7 @@ export default function ForgotPasswordPage() {
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: otp,
-        type: 'recovery',
+        type: 'email', // Changed from 'recovery' to 'email' for OTP login
       })
 
       if (verifyError) {
