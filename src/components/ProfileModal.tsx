@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 
 export interface ProfileData {
   name: string
@@ -22,8 +24,10 @@ interface ProfileModalProps {
 }
 
 export default function ProfileModal({ isOpen, onClose, profileData, onSave }: ProfileModalProps) {
+  const router = useRouter()
   const [formData, setFormData] = useState<ProfileData>(profileData)
   const [isEditing, setIsEditing] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   useEffect(() => {
     setFormData(profileData)
@@ -40,6 +44,17 @@ export default function ProfileModal({ isOpen, onClose, profileData, onSave }: P
   const handleCancel = () => {
     setFormData(profileData)
     setIsEditing(false)
+  }
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await supabase.auth.signOut()
+      router.push('/')
+    } catch (error) {
+      console.error('Logout error:', error)
+      setIsLoggingOut(false)
+    }
   }
 
   return (
@@ -220,7 +235,7 @@ export default function ProfileModal({ isOpen, onClose, profileData, onSave }: P
           )}
 
           {/* Action Buttons */}
-          {isEditing && (
+          {isEditing ? (
             <div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
               <button
                 type="submit"
@@ -234,6 +249,29 @@ export default function ProfileModal({ isOpen, onClose, profileData, onSave }: P
                 className="flex-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-6 py-3 rounded-lg font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
               >
                 Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoggingOut ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Logging out...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Logout</span>
+                  </>
+                )}
               </button>
             </div>
           )}
