@@ -132,40 +132,43 @@ export default function PatientPortal() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
       {/* Header */}
       <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <Link href="/">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="flex justify-between items-center gap-3">
+            {/* Logo and Title Section */}
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+              <Link href="/" className="flex-shrink-0">
                 <Image 
                   src={theme === 'dark' ? '/logo/logo-horizontal-dark.png' : '/logo/logo-horizontal.png'}
                   alt="TherapyFlow" 
                   width={320}
                   height={64}
-                  className="h-16 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                  className="h-10 sm:h-12 md:h-16 w-auto cursor-pointer hover:opacity-80 transition-opacity"
                   priority
                 />
               </Link>
-              <div className="border-l border-slate-300 dark:border-slate-600 pl-4">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Patient Portal</h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+              <div className="hidden sm:block border-l border-slate-300 dark:border-slate-600 pl-2 sm:pl-4 min-w-0">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate">Patient Portal</h1>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5 truncate">
                   {isLoading ? 'Loading...' : `Welcome back, ${profileData.name.split(' ')[0]}`}
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+
+            {/* Actions Section */}
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-shrink-0">
               <ThemeToggle />
               <button 
                 onClick={() => setIsMessagesModalOpen(true)}
                 title="Messages"
-                className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-purple-700 dark:from-purple-500 dark:to-purple-600 hover:from-purple-700 hover:to-purple-800 dark:hover:from-purple-600 dark:hover:to-purple-700 text-white font-medium px-6 py-2.5 rounded-xl transition-all duration-200 shadow-lg shadow-purple-500/30 dark:shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/40 dark:hover:shadow-purple-500/30 hover:scale-105 flex items-center"
+                className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-purple-700 dark:from-purple-500 dark:to-purple-600 hover:from-purple-700 hover:to-purple-800 dark:hover:from-purple-600 dark:hover:to-purple-700 text-white font-medium px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-200 shadow-lg shadow-purple-500/30 dark:shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/40 dark:hover:shadow-purple-500/30 hover:scale-105 flex items-center"
               >
                 <div className="relative z-10 flex items-center">
-                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-2.5 group-hover:bg-white/30 transition-colors">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-white/20 rounded-md sm:rounded-lg flex items-center justify-center sm:mr-2.5 group-hover:bg-white/30 transition-colors">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                   </div>
-                  <span className="text-[15px]">Messages</span>
+                  <span className="hidden sm:inline text-sm md:text-[15px]">Messages</span>
                 </div>
                 {/* Shimmer effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
@@ -174,14 +177,22 @@ export default function PatientPortal() {
               </button>
               <div 
                 onClick={() => setIsProfileModalOpen(true)}
-                className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex-shrink-0"
                 title="View Profile"
               >
-                <span className="text-white font-medium text-sm">
+                <span className="text-white font-medium text-xs sm:text-sm">
                   {profileData.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Mobile Title - Shows below logo on small screens */}
+          <div className="sm:hidden mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+            <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">Patient Portal</h1>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+              {isLoading ? 'Loading...' : `Welcome back, ${profileData.name.split(' ')[0]}`}
+            </p>
           </div>
         </div>
       </header>
