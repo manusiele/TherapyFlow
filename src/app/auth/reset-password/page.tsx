@@ -37,22 +37,24 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      // Check if user has a valid session
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        setError('Your reset link has expired. Please request a new password reset.')
-        setIsLoading(false)
-        return
-      }
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      )
 
-      const { error: updateError } = await supabase.auth.updateUser({
+      const updatePromise = supabase.auth.updateUser({
         password: password
       })
 
+      const { error: updateError } = await Promise.race([updatePromise, timeoutPromise]) as any
+
       if (updateError) {
         console.error('Password update error:', updateError)
-        setError(updateError.message || 'Failed to update password. Please try again.')
+        if (updateError.message === 'Request timeout') {
+          setError('The request is taking too long. Please check your Supabase Site URL configuration and try requesting a new reset link.')
+        } else {
+          setError(updateError.message || 'Failed to update password. Please try again.')
+        }
         setIsLoading(false)
         return
       }
@@ -66,7 +68,11 @@ export default function ResetPasswordPage() {
       }, 3000)
     } catch (err: any) {
       console.error('Unexpected error:', err)
-      setError(err?.message || 'An unexpected error occurred. Please request a new reset link.')
+      if (err?.message === 'Request timeout') {
+        setError('The request is taking too long. This usually means the reset link is invalid or your Supabase Site URL is not configured correctly. Please request a new password reset.')
+      } else {
+        setError(err?.message || 'An unexpected error occurred. Please request a new reset link.')
+      }
       setIsLoading(false)
     }
   }
